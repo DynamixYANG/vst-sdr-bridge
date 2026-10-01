@@ -88,7 +88,7 @@ internal sealed class AppFiles
         if (!File.Exists(options.GnuRadioPath)) throw new FileNotFoundException("Select gnuradio-companion.exe on the Bridge page.");
         InstallPlugin(options);
         var radio = Directory.GetParent(Path.GetDirectoryName(options.GnuRadioPath)!)!.FullName;
-        var info = new ProcessStartInfo(options.GnuRadioPath) { UseShellExecute=false, WorkingDirectory=radio };
+        var info = new ProcessStartInfo(options.GnuRadioPath) { UseShellExecute=false, WorkingDirectory=radio, Arguments=options.GnuRadioArguments };
         info.Environment["PATH"]=Path.Combine(radio,@"Library\bin")+";"+radio+";"+Path.Combine(radio,"Scripts")+";"+Environment.GetEnvironmentVariable("PATH");
         info.Environment["GR_CONF_DEFAULT_BUFFER_SIZE"]="1048576";
         info.Environment["SOAPY_SDR_ROOT"]=Path.Combine(radio,"Library");
@@ -100,7 +100,7 @@ internal sealed class AppFiles
         InstallPlugin(options);
         WriteGqrxConfig(options);
         var info=new ProcessStartInfo(options.GqrxPath) {UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(options.GqrxPath)};
-        info.ArgumentList.Add("-c"); info.ArgumentList.Add(GqrxConfig);
+        info.Arguments=$"-c \"{GqrxConfig}\" {options.GqrxArguments}";
         info.Environment["GR_CONF_DEFAULT_BUFFER_SIZE"]="1048576";
         info.Environment["SOAPY_SDR_ROOT"]=Directory.GetParent(Path.GetDirectoryName(options.GqrxPath)!)!.FullName;
         info.Environment["PATH"]=Path.GetDirectoryName(options.GqrxPath)+";"+Environment.GetEnvironmentVariable("PATH");

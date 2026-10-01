@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0
 #
 # GNU Radio Python Flow Graph
-# Title: VST Bridge - 120 MS/s duplex
+# Title: VST Bridge 2.2.0 - 120 MS/s duplex
 # Author: MagicYang
 # Description: 120 MS/s TX/RX antenna-coupled +1 MHz tone. RF enabled, peak -10 dBm, RX reference -20 dBm. Stop flowgraph to turn RF off.
 # GNU Radio version: 3.10.12.0
@@ -30,10 +30,29 @@ import threading
 def snipfcn_tx_scheduler(self):
     self.analog_sig_source_x_0.set_min_noutput_items(262144)
     self.analog_sig_source_x_0.set_max_noutput_items(262144)
-    self.analog_sig_source_x_0.set_thread_priority(1)
     self.soapy_custom_sink_0.set_min_noutput_items(262144)
     self.soapy_custom_sink_0.set_max_noutput_items(262144)
-    self.soapy_custom_sink_0.set_thread_priority(1)
+    # Render the Qt window before starting time-critical RF streaming.
+    self.resize(1400, 900)
+    self.show()
+    Qt.QApplication.processEvents()
+    print("VST Bridge example 2.2.0: TX scheduler 262144; RX/TX buffers 1048576", flush=True)
+    # Optional observational captures only; normal GRC startup uses the same main().
+    import os
+    capture_dir = os.environ.get("VST_GRC_CAPTURE_DIR")
+    if capture_dir:
+        import pathlib
+        output = pathlib.Path(capture_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        self._capture_index = 0
+        def capture():
+            self.grab().save(str(output / ("grc-render-%04d.png" % self._capture_index)))
+            self._capture_index += 1
+            if (output / "close.request").exists():
+                self.close()
+        self._capture_timer = Qt.QTimer(self)
+        self._capture_timer.timeout.connect(capture)
+        self._capture_timer.start(30000)
 
 
 def snippets_main_after_init(tb):
@@ -42,9 +61,9 @@ def snippets_main_after_init(tb):
 class vst_bridge_120_duplex(gr.top_block, Qt.QWidget):
 
     def __init__(self):
-        gr.top_block.__init__(self, "VST Bridge - 120 MS/s duplex", catch_exceptions=True)
+        gr.top_block.__init__(self, "VST Bridge 2.2.0 - 120 MS/s duplex", catch_exceptions=True)
         Qt.QWidget.__init__(self)
-        self.setWindowTitle("VST Bridge - 120 MS/s duplex")
+        self.setWindowTitle("VST Bridge 2.2.0 - 120 MS/s duplex")
         qtgui.util.check_set_qss()
         try:
             self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
@@ -77,7 +96,7 @@ class vst_bridge_120_duplex(gr.top_block, Qt.QWidget):
         ##################################################
         self.vec_len = vec_len = 262144
         self.tx_peak_dbm = tx_peak_dbm = -10
-        self.tone_hz = tone_hz = 1e6
+        self.tone_hz = tone_hz = 50e6
         self.samp_rate = samp_rate = 120e6
         self.rx_ref_dbm = rx_ref_dbm = -20
         self.freq = freq = 2.5e9
@@ -104,6 +123,7 @@ class vst_bridge_120_duplex(gr.top_block, Qt.QWidget):
         self.soapy_custom_source_0.set_dc_offset_mode(0, False)
         self.soapy_custom_source_0.set_dc_offset(0, 0)
         self.soapy_custom_source_0.set_iq_balance(0, 0)
+        self.soapy_custom_source_0.set_min_output_buffer(1048576)
         self.soapy_custom_sink_0 = None
         dev = 'driver=' + 'vst'
         stream_args = ''
@@ -264,10 +284,10 @@ class vst_bridge_120_duplex(gr.top_block, Qt.QWidget):
 
     def set_freq(self, freq):
         self.freq = freq
-        self.soapy_custom_sink_0.set_frequency(0, self.freq)
-        self.soapy_custom_source_0.set_frequency(0, self.freq)
         self.qtgui_freq_sink_x_0.set_frequency_range(self.freq, self.samp_rate)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.freq, self.samp_rate)
+        self.soapy_custom_sink_0.set_frequency(0, self.freq)
+        self.soapy_custom_source_0.set_frequency(0, self.freq)
 
 
 

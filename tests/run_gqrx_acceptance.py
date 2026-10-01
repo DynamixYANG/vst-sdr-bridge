@@ -1,10 +1,12 @@
 """Direct TDMS TX + actual GQRX GUI consumer, including RF-on/off spectrum checks."""
-import os,pathlib,subprocess,time,json,sys
+import os,pathlib,subprocess,time,json,sys,argparse
 from PyQt5.QtCore import QSettings
 from bridge_soak import command,status,monitor
 from rx_spectrum_probe import probe
 from review_rf_spectrum import compare
-root=pathlib.Path(__file__).resolve().parents[1];out=root/'tests/artifacts/gqrx-tdms-120-20min';out.mkdir(parents=True,exist_ok=True)
+root=pathlib.Path(__file__).resolve().parents[1]
+p=argparse.ArgumentParser();p.add_argument('--seconds',type=int,default=1200);p.add_argument('--name',default='gqrx-tdms-2.2-20min');a=p.parse_args()
+out=root/'tests/artifacts'/a.name;out.mkdir(parents=True,exist_ok=False)
 config=out/'gqrx.conf';q=QSettings(str(config),QSettings.IniFormat)
 settings={'configversion':4,'crashed':False,'input/device':'soapy=0,driver=vst,resource=RIO0','input/sample_rate':120000000,'input/frequency':2500000000,'input/gains':{'RefLevel':-200},'input/antenna':'RF_IN','receiver/demod':'Demod Off','receiver/frequency':2500000000,'receiver/filter_offset':0,'receiver/sql_enabled':False,'fft/fft_window':'hann','fft/fft_size':16384,'fft/fft_rate':20,'fft/averaging':50,'fft/panadapter_min_db':-130,'fft/panadapter_max_db':-30,'fft/waterfall_min_db':-115,'fft/waterfall_max_db':-65,'fft/plot_y_unit':'dbfs','remote_control/enabled':True,'remote_control/allowed_hosts':'127.0.0.1','audio/gain':-60}
 for key,value in settings.items():q.setValue(key,value)
@@ -31,7 +33,7 @@ try:
   if s['tx']['status']=='STREAMING':break
   if s['tx']['status']=='FAULT':raise RuntimeError(s['tx']['error'])
   time.sleep(.2)
- time.sleep(5);on=probe(out/'rx-four-carrier-on');result=monitor(1200,out)
+ time.sleep(5);on=probe(out/'rx-four-carrier-on');result=monitor(a.seconds,out)
  end=probe(out/'rx-four-carrier-end');command('TXSTOP');time.sleep(2);off=probe(out/'rx-rf-off-after')
  contrast={key:end['carrier_band_mean_bin_dbfs'][key]-off['carrier_band_mean_bin_dbfs'][key] for key in end['carrier_band_mean_bin_dbfs']}
  result['rf_spectrum_checks']={'band_on_off_db':contrast,'all_four_above_off_by_10db':all(v>10 for v in contrast.values()),'rf_off_after_stop':not status()['tx']['rf_enabled'],'gqrx_running':process.poll() is None,'gqrx_frames':len(list(out.glob('gqrx-render-*.png')))}

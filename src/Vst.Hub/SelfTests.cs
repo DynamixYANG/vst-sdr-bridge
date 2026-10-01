@@ -103,6 +103,18 @@ internal static class SelfTests
         checks.Add("TX bounded queue: all 33,554,432 samples ordered across eight wraps");
         if(queue.Occupancy!=0||queue.Produced!=queue.Consumed)throw new InvalidOperationException("TX queue accounting mismatch");
         checks.Add("TX queue occupancy returns to zero");
+        using(var delayed=new TxSampleQueue(16))
+        {
+            var delayedProducer=new Thread(()=>{Thread.Sleep(800);delayed.AcquireWrite(CancellationToken.None);delayed.Publish();});
+            delayedProducer.Start();
+            try {delayed.AcquireRead(CancellationToken.None,2000);delayed.Release();}
+            finally {delayedProducer.Join();}
+            checks.Add("TX startup accepts first data delayed beyond 500 ms");
+            bool starved=false;
+            try {delayed.AcquireRead(CancellationToken.None);} catch(TimeoutException) {starved=true;}
+            if(!starved) throw new InvalidOperationException("TX steady-state starvation timeout missing");
+            checks.Add("TX steady-state still rejects an empty queue after 500 ms");
+        }
         using var full=new TxSampleQueue(16);
         for(int i=0;i<4;i++){full.AcquireWrite(CancellationToken.None);full.Publish();}
         using var blocked=new CancellationTokenSource(30);

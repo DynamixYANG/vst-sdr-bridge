@@ -1,0 +1,3 @@
+# Bridge 2.2 UI verification
+
+Actual WinForms DrawToBitmap renders from the built application, at its default and minimum window sizes on the test host (144 DPI). All six tabs are captured with matching layout JSON. These are application-owned renders, not desktop photographs. Visual inspection confirmed separate RX/TX header badges, Bridge launch settings, independent configuration actions, aligned monitor labels/bars/chart titles, readable disabled RF text and chronological initialization logs. Active low-rate TX was intentionally running during these renders; the examples/configuration drafts can differ from the applied live-client settings.

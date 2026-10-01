@@ -17,19 +17,25 @@ internal sealed class NiDeviceSession : IDisposable
             name is "niRFSA_64.dll" or "niRFSG_64.dll"
             ? NativeLibrary.Load(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),@"IVI Foundation\IVI\Bin",name)) : 0);
     }
-    public NiDeviceSession(HubOptions options)
+    public NiDeviceSession(HubOptions options,Action<string>? progress=null)
     {
         if(!File.Exists(options.BitfilePath)) throw new FileNotFoundException("NI streaming bitfile missing",options.BitfilePath);
         try
         {
+            progress?.Invoke("Opening NI-RFSG session with Streaming for VST bitfile");
             int code=TxNative.niRFSG_InitWithOptions(options.Resource,1,0,"DriverSetup=Bitfile:NI Streaming for VST.lvbitx",out var sg);
             Rfsg=sg; CheckTx(code,"RFSG init");
+            progress?.Invoke("Disabling RF output before configuring the device");
             CheckTx(TxNative.niRFSG_ConfigureOutputEnabled(Rfsg,0),"RF output off");
+            progress?.Invoke("Opening NI-RFSA session on the shared device");
             code=Native.niRFSA_InitWithOptions(options.Resource,1,0,"DriverSetup=Bitfile:NI Streaming for VST.lvbitx",out var sa);
             Rfsa=sa; CheckRx(code,"RFSA init");
+            progress?.Invoke("Enabling shared FPGA session access");
             CheckRx(Native.niRFSA_EnableSessionAccess(Rfsa,1),"FPGA session access");
+            progress?.Invoke("Opening shared FPGA and checking bitfile signature");
             code=Native.NiFpgaDll_Open(options.BitfilePath,"F9744DDE15670B63D27A69F7CB821C89",options.Resource,1,out var fpga);
             Fpga=fpga; CheckRx(code,"Shared FPGA open");
+            progress?.Invoke("RFSA, RFSG and shared FPGA sessions ready");
         }
         catch {Dispose();throw;}
     }

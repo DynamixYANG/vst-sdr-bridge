@@ -1,14 +1,14 @@
-param([string]$Version='2.1.0',[switch]$AllowIncomplete)
+param([string]$Version='2.2.0',[switch]$AllowIncomplete)
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
+$releaseSeries=($Version.Split('.')[0..1] -join '.')
+$acceptance=@('grc-normal-2.2-20min','gqrx-tdms-2.2-accepted17','gqrx-tdms-2.2-interrupted','tx-controls-2.2','tx-startup-2.2','independence-2.2','independence-footer-2.2','ui-footer-final-2.2','grc-manual-timeout','grc-normal-2.1.1-sse-start1')
 if(-not $AllowIncomplete){
- foreach($test in @('grc-120-20min','gqrx-tdms-120-20min','independence')){
-  $file=Join-Path $root "tests\artifacts\$test\result.json"
-  if(-not (Test-Path -LiteralPath $file) -or (Get-Content -Raw $file | ConvertFrom-Json).status -ne 'PASS'){throw "Acceptance missing or failed: $test"}
- }
+ . (Join-Path $PSScriptRoot 'Test-ReleaseAcceptance.ps1')
+ Test-ReleaseAcceptance $root
 }
 $stage=Join-Path $root ('work\release-stage-'+(Get-Date -Format yyyyMMdd-HHmmss))
-$out=Join-Path $root 'docs\releases\2.1'
+$out=Join-Path $root ('docs\releases\'+$releaseSeries)
 New-Item -ItemType Directory -Force $stage,$out,(Join-Path $stage 'VST-Bridge'),(Join-Path $stage 'SoapyVST') | Out-Null
 Copy-Item (Join-Path $root 'dist\VSTHub\VSTHub.exe') (Join-Path $stage 'VST-Bridge\VSTHub.exe')
 foreach($dir in @('examples','waveforms')){
@@ -26,14 +26,15 @@ Copy-Item (Join-Path $root 'README.md'),(Join-Path $root 'README.zh-CN.md'),(Joi
 New-Item -ItemType Directory -Force (Join-Path $stage 'VST-Bridge\scripts') | Out-Null
 Copy-Item (Join-Path $root 'scripts\Launch-Example.ps1'),(Join-Path $root 'scripts\generate_nr_four_carrier.py'),(Join-Path $root 'scripts\README.md') (Join-Path $stage 'VST-Bridge\scripts')
 New-Item -ItemType Directory -Force (Join-Path $stage 'VST-Bridge\tests\artifacts') | Out-Null
-foreach($test in @('grc-120-20min','gqrx-tdms-120-20min','independence')){
+foreach($test in $acceptance){
  $dest=Join-Path $stage "VST-Bridge\tests\artifacts\$test"
  New-Item -ItemType Directory -Force $dest | Out-Null
 Get-ChildItem (Join-Path $root "tests\artifacts\$test") -File | Copy-Item -Destination $dest
 }
 Copy-Item (Join-Path $root 'tests\GQRX-CAPTURE.md') (Join-Path $stage 'VST-Bridge\tests')
 Copy-Item (Join-Path $root 'tests\review_rf_spectrum.py'),(Join-Path $root 'tests\gqrx-capture-instrumentation.patch') (Join-Path $stage 'VST-Bridge\tests')
-Copy-Item (Join-Path $root 'tests\artifacts\release-binary-hashes.json') (Join-Path $stage 'VST-Bridge\tests\artifacts')
+Copy-Item (Join-Path $root 'tests\artifacts\release-binary-hashes-2.2.json') (Join-Path $stage 'VST-Bridge\tests\artifacts')
+Copy-Item (Join-Path $root 'tests\artifacts\release-review-2.2.json'),(Join-Path $root 'tests\artifacts\release-ui-binary-hashes-2.2.json'),(Join-Path $root 'tests\artifacts\selftest-result.json') (Join-Path $stage 'VST-Bridge\tests\artifacts')
 @'
 # Start VST Bridge
 
@@ -50,12 +51,12 @@ Copy-Item (Join-Path $root 'soapy-vst\README.md') (Join-Path $stage 'SoapyVST')
 @'
 # Soapy VST plugin
 
-Windows x64 / SoapySDR 0.8. Close GQRX and GNU Radio before installation.
+Windows x64 / SoapySDR 0.8. Close GQRX and GNU Radio before installation. Use the matching Bridge 2.2 release for TXIDLE and buffer-default support.
 Copy vstSupport.dll to radioconda/Library/lib/SoapySDR/modules0.8.
 Start the matching VST Bridge release (VSTHub.exe), which owns the NI session.
 GQRX device: soapy=0,driver=vst,resource=RIO0
 GNU Radio / Soapy: driver=vst,resource=RIO0
-RX readStream and TX writeStream support CF32/CS16; TX is 120 MS/s.
+RX readStream and TX writeStream support CF32/CS16; TX supports 1–120 MS/s.
 The application package embeds this same DLL and normally installs it automatically.
 Do not run a legacy producer alongside the Bridge.
 '@ | Set-Content -Encoding utf8 (Join-Path $stage 'SoapyVST\INSTALL.md')

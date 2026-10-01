@@ -1,0 +1,3 @@
+Exact scalar equivalence: PASS
+scalar_msps=clips=0 182.629
+sse2_msps=clips=0 602.79

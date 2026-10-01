@@ -17,3 +17,6 @@
 /docs/releases/2.1/SHA256SUMS.txt
 *.user
 .vs/
+
+/docs/releases/2.2/*.zip
+/docs/releases/2.2/SHA256SUMS.txt

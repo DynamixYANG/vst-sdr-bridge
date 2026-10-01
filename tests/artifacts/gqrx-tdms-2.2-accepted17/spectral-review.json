@@ -1,0 +1,26 @@
+{
+  "method": "Initial saved RF ON versus pre-run RF OFF; central 16 MHz median >10 dB and >=95% bins >10 dB",
+  "bands": {
+    "-30000000.0": {
+      "median_on_off_db": 14.628032329414097,
+      "fraction_bins_above_10db": 0.6514181152790485,
+      "pass": false
+    },
+    "-10000000.0": {
+      "median_on_off_db": 25.816478214343604,
+      "fraction_bins_above_10db": 1.0,
+      "pass": true
+    },
+    "10000000.0": {
+      "median_on_off_db": 29.930632230755926,
+      "fraction_bins_above_10db": 0.9972527472527473,
+      "pass": true
+    },
+    "30000000.0": {
+      "median_on_off_db": 29.579989735563927,
+      "fraction_bins_above_10db": 0.9789569990850869,
+      "pass": true
+    }
+  },
+  "pass": false
+}

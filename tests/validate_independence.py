@@ -1,6 +1,7 @@
-import pathlib,json,time
+import pathlib,json,time,argparse
 from bridge_soak import command,status
-root=pathlib.Path(__file__).resolve().parents[1];out=root/'tests/artifacts/independence';out.mkdir(exist_ok=True)
+parser=argparse.ArgumentParser();parser.add_argument('--name',default='independence-2.2');args=parser.parse_args()
+root=pathlib.Path(__file__).resolve().parents[1];out=root/'tests/artifacts'/args.name;out.mkdir(exist_ok=True)
 checks=[];snapshots=[]
 def wait_tx():
  for _ in range(100):

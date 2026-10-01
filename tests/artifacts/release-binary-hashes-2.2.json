@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "402E38D4FEF5139E6A1FF1DD14CC0D91738C1C7DB869F265AD6EE5F50FCA4CB1",
+    "Path": "C:\\Users\\yang\\Documents\\Codex\\2026-09-28\\yaml-c-users-yang-documents-pxie5644r\\dist\\VSTHub\\VSTHub.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C89FC3A7F3BDF65251772DAF0D12BD888C537FFC04D87D7EADD3D396CCDEF16C",
+    "Path": "C:\\Users\\yang\\Documents\\Codex\\2026-09-28\\yaml-c-users-yang-documents-pxie5644r\\soapy-vst\\build-vst\\vstSupport.dll"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1BFB0EB7C73361B04FCB198B8F2A694087C0E5E083AFB912319E25EF8B22A86E",
+    "Path": "C:\\Users\\yang\\Documents\\Codex\\2026-09-28\\yaml-c-users-yang-documents-pxie5644r\\work\\bridge-upgrade\\gqrx-capture\\build\\src\\gqrx.exe"
+  }
+]

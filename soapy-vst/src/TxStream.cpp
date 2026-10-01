@@ -3,6 +3,8 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#include "HighResolutionWait.hpp"
+#include "TxConvert.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -81,6 +83,7 @@ struct Device::TxProducer {
   uint8_t *base{nullptr};
   int16_t *data{nullptr};
   uint64_t cap{0};
+  bool stoppedReported{false};
 
   ~TxProducer() { close(); }
 
@@ -162,6 +165,18 @@ struct Device::TxProducer {
     size_t done = 0;
     while (done < samples) {
       lock();
+      // A stopped Hub leaves the mapping alive while this producer holds it.
+      // Filling that orphaned ring must not masquerade as ordinary backpressure.
+      const uint32_t state = ld32(156);
+      const bool stopped = ld32(60) == 0 || state == 4 || state == 5;
+      if (stopped) {
+        unlock();
+        if (!stoppedReported) {
+          SoapySDR::log(SOAPY_SDR_ERROR, "vst tx: Bridge TX stopped/faulted. Inspect Bridge TX error; stop and restart the flowgraph.");
+          stoppedReported = true;
+        }
+        return done ? static_cast<int>(done) : SOAPY_SDR_STREAM_ERROR;
+      }
       const uint64_t w = ld64(24);
       const uint64_t r = ld64(32);
       if (w < r) { unlock(); return done ? static_cast<int>(done) : SOAPY_SDR_STREAM_ERROR; }
@@ -172,7 +187,7 @@ struct Device::TxProducer {
         st64(96, GetTickCount64());
         unlock();
         if (GetTickCount64() >= deadline) return done ? static_cast<int>(done) : SOAPY_SDR_TIMEOUT;
-        Sleep(1); // yield to Hub ring consumer; Sleep(0) busy-spins and worsens duplex scheduling
+        waitOneMillisecond(); // bounded backpressure without the ~15.6 ms Sleep tick
         continue;
       }
       const size_t pos = static_cast<size_t>(w % cap);
@@ -195,8 +210,8 @@ std::string Device::txConfigJson() const {
   char buf[1280];
   std::snprintf(buf, sizeof(buf),
     "{\"source\":\"live_ring\",\"center_hz\":%.17g,\"rate_hz\":%.17g,\"peak_dbm\":%.17g,"
-    "\"rf_enabled\":%s,\"ring_name\":\"%s\",\"ring_mi_b\":%d,\"queue_mi_b\":128,"
-    "\"fifo_mi_b\":256,\"prefill_blocks\":16,\"waveform_path\":\"\"}",
+    "\"rf_enabled\":%s,\"ring_name\":\"%s\",\"ring_mi_b\":%d,"
+    "\"waveform_path\":\"\"}",
     _txCenterHz, _txRate, _txPeakDbm, _txRfEnabled ? "true" : "false",
     jsonEscape(_txRing).c_str(), _txRingMiB);
   return buf;
@@ -210,8 +225,8 @@ void Device::startTx() {
     std::lock_guard<std::mutex> lock(_mutex);
     if (!std::isfinite(_txCenterHz) || _txCenterHz < 65e6 || _txCenterHz > 6e9)
       throw std::invalid_argument("TX frequency: 65 MHz to 6 GHz");
-    if (std::abs(_txRate - 120e6) > 1.0)
-      throw std::invalid_argument("TX sample rate must be 120e6 in this release");
+    if (!std::isfinite(_txRate) || _txRate < 1e6 || _txRate > 120e6)
+      throw std::invalid_argument("TX sample rate must be 1 to 120 MS/s");
     if (!std::isfinite(_txPeakDbm) || _txPeakDbm < -50.0 || _txPeakDbm > 0.0)
       throw std::invalid_argument("TX peak level: -50 to 0 dBm");
     json = txConfigJson();
@@ -265,7 +280,7 @@ void Device::stopTx() {
   }
   if (prod) prod->release();
   try {
-    const std::string reply = hubCommand(host, port, "TXSTOP");
+    const std::string reply = hubCommand(host, port, "TXIDLE");
     if (reply.compare(0, 3, "ERR") == 0) {
       std::lock_guard<std::mutex> lock(_mutex);
       _lastError = reply;
@@ -317,18 +332,7 @@ int Device::writeStream(SoapySDR::Stream *stream, const void *const *buffs, cons
   } else {
     const auto *in = static_cast<const float *>(buffs[0]);
     if (tlsCs16.size() < n * 2) tlsCs16.resize(n * 2);
-    uint64_t clips = 0;
-    const float g = gain;
-    for (size_t i = 0; i < n; ++i) {
-      float ii = in[2 * i] * g;
-      float qq = in[2 * i + 1] * g;
-      if (ii > 1.f || ii < -1.f || qq > 1.f || qq < -1.f) ++clips;
-      ii = std::max(-1.f, std::min(1.f, ii));
-      qq = std::max(-1.f, std::min(1.f, qq));
-      const float si = ii * 32767.f, sq = qq * 32767.f;
-      tlsCs16[2 * i] = static_cast<int16_t>(si >= 0.f ? si + 0.5f : si - 0.5f);
-      tlsCs16[2 * i + 1] = static_cast<int16_t>(sq >= 0.f ? sq + 0.5f : sq - 0.5f);
-    }
+    const uint64_t clips = convertTxCf32(in,tlsCs16.data(),n,gain);
     _txClips.fetch_add(clips);
     rc = prod->writeCs16(tlsCs16.data(), n, timeoutUs);
   }

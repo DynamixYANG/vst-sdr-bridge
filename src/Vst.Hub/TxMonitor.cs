@@ -9,15 +9,15 @@ internal sealed partial class MonitorForm
     private readonly MeterBar txQueueBar=new(),txHostBar=new(),txFpgaBar=new();
     private readonly TrendPlot txTrend=new(){Caption="Last 60 s  ·  Green DMA / Blue FPGA processed  [MS/s]"};
     private readonly TextBox txPath=new();
-    private readonly NumericUpDown txFrequency=new(),txPeak=new();
-    private readonly CheckBox txRf=new(){Text="Enable RF output on explicit Start TX",AutoSize=true};
+    private readonly NumberChoice txFrequency=new(),txPeak=new(),txRate=new(),txQueue=new(),txFifo=new(),txPrefill=new();
+    private readonly CheckBox txRf=new HubCheckBox(){Text="Enable RF",AutoSize=true,ForeColor=Color.WhiteSmoke};
     private readonly Button txStart=new HubButton(),txStop=new HubButton();
     private void BuildTxMonitor(Control parent)
     {
         var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=7,Padding=new Padding(4)};
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        for(int i=0;i<3;i++)layout.RowStyles.Add(new RowStyle(SizeType.Absolute,50));
+        for(int i=0;i<3;i++)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));parent.Controls.Add(layout);
         var cards=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=3,RowCount=1};
         for(int i=0;i<3;i++)cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f/3));
@@ -32,42 +32,56 @@ internal sealed partial class MonitorForm
         txDiagnostic.AutoSize=true;txDiagnostic.Dock=DockStyle.Fill;txDiagnostic.ForeColor=Muted;txDiagnostic.Padding=new Padding(4,6,4,8);layout.Controls.Add(txDiagnostic);
         txTrend.Dock=DockStyle.Fill;txTrend.BackColor=PanelColor;layout.Controls.Add(txTrend);
     }
+    private static string TxStatusText(string status) => status switch
+    {
+        "STREAMING"=>"Running", "WAITING_CLIENT"=>"No client data", "CONFIGURING"=>"Configuring",
+        "PREFILLING"=>"Prefilling", "STOPPING"=>"Stopping", "FAULT"=>"Error", _=>"Stopped"
+    };
+    private TxConfiguration TxDraft() => options.Tx with
+    {
+        Source="file",WaveformPath=txPath.Text.Trim(),CenterHz=(double)txFrequency.Value*1e6,
+        RateHz=(double)txRate.Value*1e6,PeakDbm=(double)txPeak.Value,RfEnabled=txRf.Checked,
+        QueueMiB=IntegerChoice(txQueue),FifoMiB=IntegerChoice(txFifo),PrefillBlocks=IntegerChoice(txPrefill)
+    };
+    private void SaveTxDraft(TxConfiguration config)
+    {
+        options=options with {Tx=config with {RfEnabled=false}};files.Save(options);
+        engine.Log.Event("INFO","tx.configuration_saved",options.Tx);
+    }
     private void BuildTxConfiguration(Control parent)
     {
-        var layout=new TableLayoutPanel{Dock=DockStyle.Fill,AutoScroll=true,ColumnCount=1,RowCount=7,Padding=new Padding(12)};
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));parent.Controls.Add(layout);
-        for(int i=0;i<7;i++)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        var intro=Label("TX streaming · 120 MS/s · TDMS / CS16 / live Soapy IQ\r\nDirect file playback or GNU Radio live streaming. RF output defaults to OFF. TX and RX start/stop independently on the shared device session.",11,Muted);
-        intro.AutoSize=true;intro.Margin=new Padding(0,0,0,16);layout.Controls.Add(intro);
-        var fileRow=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=2};
+        var table=ConfigurationForm(parent);
+        txPath.Text=options.Tx.WaveformPath;
+        var fileRow=new TableLayoutPanel{AutoSize=true,ColumnCount=2,Dock=DockStyle.Top};
         fileRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));fileRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        txPath.Dock=DockStyle.Fill;txPath.Text=options.Tx.WaveformPath;txPath.BackColor=PanelColor;txPath.ForeColor=Color.WhiteSmoke;
-        var browse=new HubButton();Button(browse,"Select waveform…",()=>
+        txPath.Dock=DockStyle.Fill;txPath.BackColor=PanelColor;txPath.ForeColor=Color.WhiteSmoke;
+        var browse=new HubButton();Button(browse,"Browse…",()=>
         {
-            using var dialog=new OpenFileDialog{Filter="IQ waveforms|*.tdms;*.tmds;*.cs16|NI TDMS|*.tdms;*.tmds|CS16 + JSON|*.cs16",Title="Select TDMS (I/Q channels) or CS16 with JSON metadata"};
+            using var dialog=new OpenFileDialog{Filter="IQ waveforms|*.tdms;*.tmds;*.cs16",Title="Select TDMS I/Q or CS16 with metadata"};
             if(dialog.ShowDialog(this)==DialogResult.OK)txPath.Text=dialog.FileName;return Task.CompletedTask;
-        });fileRow.Controls.Add(txPath,0,0);fileRow.Controls.Add(browse,1,0);layout.Controls.Add(fileRow);
-        var settings=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,WrapContents=true,Padding=new Padding(0,12,0,12)};
-        txFrequency.Minimum=65;txFrequency.Maximum=6000;txFrequency.DecimalPlaces=3;txFrequency.Width=130;txFrequency.Value=(decimal)(options.Tx.CenterHz/1e6);
-        txPeak.Minimum=-50;txPeak.Maximum=0;txPeak.DecimalPlaces=1;txPeak.Width=90;txPeak.Value=(decimal)options.Tx.PeakDbm;
-        var f=Label("Center (MHz)",10,Muted);f.AutoSize=true;var p=Label("Peak level (dBm)",10,Muted);p.AutoSize=true;
-        settings.Controls.AddRange([f,txFrequency,p,txPeak]);layout.Controls.Add(settings);
-        txRf.Checked=false;txRf.Margin=new Padding(0,4,0,12);layout.Controls.Add(txRf);
-        var buffers=Label($"Source queue: {options.Tx.QueueMiB} MiB   ·   Host DMA FIFO: {options.Tx.FifoMiB} MiB   ·   Prefill: {options.Tx.PrefillBlocks*4} MiB\r\nRFSG peak-level mode. Average RF power depends on waveform RMS and the calibrated signal path.\r\nFour 20 MHz NR carriers fit the nominal 80 MHz RF bandwidth; 120 MS/s is the IQ rate.",10,Muted);buffers.AutoSize=true;layout.Controls.Add(buffers);
-        var actions=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,Padding=new Padding(0,18,0,12)};
-        Button(txStart,"Start TX",async()=>
-        {
-            var config=options.Tx with {Source="file",WaveformPath=txPath.Text.Trim(),CenterHz=(double)txFrequency.Value*1e6,PeakDbm=(double)txPeak.Value,RfEnabled=txRf.Checked};config.Validate();
-            if(await Send("TXSTART "+JsonDefaults.Serialize(config))) {options=options with {Tx=config with {RfEnabled=false}};files.Save(options);}
-        });
-        Button(txStop,"Stop TX",async()=>await Send("TXSTOP"));actions.Controls.AddRange([txStart,txStop]);layout.Controls.Add(actions);
-        var note=Label("TX faults latch OFF and require explicit restart. RX center/ref can change while TX runs; stop TX before changing RX sample rate.\r\nTX Monitor shows measured rates, reserves, priming and underflows.\r\nGNU Radio / Soapy writeStream provides live TX. GQRX is a receive application.\r\nRF OUT (front-panel TX) is independent of RF IN (RX). Antenna coupling needs enough peak power for path loss.",10,Muted);note.AutoSize=true;layout.Controls.Add(note);
+        });fileRow.Controls.Add(txPath,0,0);fileRow.Controls.Add(browse,1,0);
+        ConfigurationRow(table,"Waveform",fileRow,"Repeat a TDMS I/Q or CS16 waveform. The file sample rate must match the TX rate; loading and validation finish before RF starts.");
+        txRate.Configure(1,120,(decimal)(options.Tx.RateHz/1e6),1,5,10,20,30.72m,40,60,61.44m,80,100,120);
+        txFrequency.Configure(65,6000,(decimal)(options.Tx.CenterHz/1e6),100,433,915,1000,2400,2450,2500,3500,5800);
+        txPeak.Configure(-50,0,(decimal)options.Tx.PeakDbm,-50,-40,-30,-20,-10,0);
+        txQueue.Configure(16,256,options.Tx.QueueMiB,16,32,64,128,256);
+        txFifo.Configure(64,512,options.Tx.FifoMiB,64,128,256,512);
+        txPrefill.Configure(4,32,options.Tx.PrefillBlocks,4,8,16,24,32);
+        ConfigurationRow(table,"Sample rate / MS/s",txRate,"Requested TX complex IQ rate, 1–120 MS/s. File metadata must match. Hardware readback is displayed in TX Monitor.");
+        ConfigurationRow(table,"Center / MHz",txFrequency,"Independent RF output center, 65 MHz–6 GHz.");
+        ConfigurationRow(table,"Peak level / dBm",txPeak,"RFSG peak level, −50…0 dBm. Average output power also depends on waveform RMS.");
+        ConfigurationRow(table,"Source queue / MiB",txQueue,"Bounded CS16 queue, 16–256 MiB in multiples of 4. A full queue applies backpressure without overwriting IQ.");
+        ConfigurationRow(table,"Host DMA FIFO / MiB",txFifo,"Requested TX DMA FIFO, 64–512 MiB. The monitor reports actual allocation.");
+        ConfigurationRow(table,"Prefill / blocks",txPrefill,"File playback prefill: 4–32 blocks, 4 MiB per block, less than the FIFO capacity. Live TX uses a larger startup reserve, up to 48 blocks.");
+        txRf.Checked=false;ConfigurationRow(table,"RF output",txRf,"Explicitly enable RF when starting TX. RF is disabled on stop, missing client data, or a hardware error.");
+        var save=new HubButton();Button(save,"Apply TX",async()=>{var config=TxDraft();(config with {Source="live_ring"}).Validate();if(await Send("TXDEFAULTS "+JsonDefaults.Serialize(config)))SaveTxDraft(config);});
+        ConfigurationRow(table,"",ActionRow(save),"Apply file playback settings. Start and Stop remain visible in the window footer. Live GNU Radio TX is started by the Soapy sink.");
     }
     private void RefreshTx(TxSnapshot s)
     {
         txSource.Text=$"{s.SourceMsps:F2} MS/s";txDma.Text=$"{s.DmaMsps:F2} MS/s";txProcessed.Text=$"{s.ProcessedMsps:F2} MS/s";
         txSourceBits.Text=$"{HubOptions.RawIqGbps(s.SourceMsps*1e6):F3} Gbps";txDmaBits.Text=$"{HubOptions.RawIqGbps(s.DmaMsps*1e6):F3} Gbps";txProcessedBits.Text=$"{HubOptions.RawIqGbps(s.ProcessedMsps*1e6):F3} Gbps";
-        txState.Text=$"{s.Status}   ·   RF {(s.RfEnabled?"ON":"OFF")}   ·   {s.AppliedRateHz/1e6:F3} MS/s   ·   {s.AppliedCenterHz/1e6:F3} MHz   ·   Peak {s.AppliedPeakDbm:F1} dBm\r\n{s.Waveform}";
+        txState.Text=$"{TxStatusText(s.Status)}   ·   RF {(s.RfEnabled?"ON":"OFF")}   ·   {s.AppliedRateHz/1e6:F3} MS/s   ·   {s.AppliedCenterHz/1e6:F3} MHz   ·   Peak {s.AppliedPeakDbm:F1} dBm\r\n{s.Waveform}";
         txState.ForeColor=s.Status=="FAULT"?Color.Salmon:Muted;
         double ms(ulong n)=>s.AppliedRateHz>0?n/s.AppliedRateHz*1000:0;
         txQueueLabel.Text=$"Source Queue     {s.QueueSamples*4d/1048576:F1} / {s.QueueCapacity*4d/1048576:F0} MiB     {s.QueuePercent:F1}%     Reserve {ms(s.QueueSamples):F1} ms";
@@ -79,6 +93,6 @@ internal sealed partial class MonitorForm
         txTrend.Add(s.DmaMsps,s.ProcessedMsps);
         bool active=s.Status is "CONFIGURING" or "PREFILLING" or "STREAMING" or "STOPPING";
         txStart.Enabled=!active&&engine.Snapshot.Capabilities.Tx;txStop.Enabled=active;
-        txPath.Enabled=txFrequency.Enabled=txPeak.Enabled=txRf.Enabled=!active;
+        txPath.Enabled=txFrequency.Enabled=txPeak.Enabled=txRate.Enabled=txQueue.Enabled=txFifo.Enabled=txPrefill.Enabled=txRf.Enabled=!active;
     }
 }

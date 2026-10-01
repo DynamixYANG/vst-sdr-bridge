@@ -18,7 +18,8 @@ internal sealed partial class MonitorForm : Form
     private readonly MeterBar fifo=new(), ring=new();
     private readonly TrendPlot trend=new();
     private readonly TextBox events=new(), arguments=new(), gqrxPath=new();
-    private readonly NumericUpDown frequency=new(), reference=new(), sampleRate=new(), ringMiB=new();
+    private readonly NumberChoice frequency=new(), reference=new(), sampleRate=new(), ringMiB=new();
+    private readonly Label txBadge=new();
     private readonly Button start=new HubButton(), halt=new HubButton(), apply=new HubButton(), gqrx=new HubButton(), applyPath=new HubButton();
     private bool closing, canClose;
     private string lastEvents="";
@@ -31,46 +32,35 @@ internal sealed partial class MonitorForm : Form
         Text="VST Bridge · GNU Radio / GQRX"; Size=new Size(1180,900); MinimumSize=new Size(1040,780);
         BackColor=Background; ForeColor=Color.WhiteSmoke; Font=new Font("Segoe UI",10);
         AutoScaleDimensions=new SizeF(96,96); AutoScaleMode=AutoScaleMode.Dpi; StartPosition=FormStartPosition.CenterScreen;
-        // Text and actions take their preferred height; only the plot expands.
-        var root=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(20,20,20,20),ColumnCount=1,RowCount=7};
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        root.RowStyles.Add(new RowStyle(SizeType.Percent,100));  // tabs
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute,16));
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute,10));
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        Controls.Add(root);
-        var heading=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=3,Padding=new Padding(0,0,0,10)};
-        heading.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); heading.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); heading.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        var title=Label("VST Bridge",22,Color.White); title.AutoSize=true; title.Margin=new Padding(0,0,18,0); heading.Controls.Add(title,0,0);
-        var subtitle=Label("GNU Radio / GQRX middleware  ·  v2.1",10,Muted); subtitle.AutoSize=true; subtitle.Anchor=AnchorStyles.Left; heading.Controls.Add(subtitle,1,0);
-        state.Font=new Font(Font.FontFamily,13,FontStyle.Bold); state.ForeColor=Accent; state.AutoSize=true; state.Anchor=AnchorStyles.Right; state.TextAlign=ContentAlignment.MiddleRight; heading.Controls.Add(state,2,0); root.Controls.Add(heading);
-        banner.Dock=DockStyle.Fill; banner.AutoSize=true; banner.Padding=new Padding(12,8,12,8); banner.BackColor=PanelColor; banner.ForeColor=Muted; root.Controls.Add(banner);
-        tips.SetToolTip(banner,"Status messages and the last applied-settings notice appear here.");
-        var tabs=new MonitorTabs{Dock=DockStyle.Fill,Padding=new Point(18,8)}; root.Controls.Add(tabs);
-        var bridge=Page(tabs,"Bridge"); BuildBridge(bridge); var overview=Page(tabs,"RX Monitor"); var txPage=Page(tabs,"TX Monitor"); var connection=Page(tabs,"RX Configuration"); var txSetup=Page(tabs,"TX Configuration"); var logPage=Page(tabs,"Logs & Debug");
-        BuildOverview(overview); BuildConnection(connection);
-        BuildTxMonitor(txPage);BuildTxConfiguration(txSetup);
-        events.Multiline=true; events.ReadOnly=true; events.ScrollBars=ScrollBars.Both; events.WordWrap=false; events.Dock=DockStyle.Fill;
-        events.BackColor=PanelColor; events.ForeColor=Muted; events.Font=new Font("Consolas",10); logPage.Controls.Add(events);
-        tips.SetToolTip(events,"Rotating UTC JSONL event log (newest at the bottom). Open Logs for files on disk.");
-        root.Controls.Add(new Panel{Dock=DockStyle.Fill,BackColor=Background}); // spacer: tabs -> buttons
-        var buttons=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Padding=new Padding(0,4,0,4),WrapContents=true,FlowDirection=FlowDirection.LeftToRight};
-        Button(start,"Start / Retry RX",async()=>{if(!engine.IsAlive) engine.Start(); else await Send("START");});
-        Button(halt,"Stop RX",async()=>await Send("STOP"));
-        Button(gqrx,"Launch GQRX",()=>{try {files.LaunchGqrx(this.options);}catch(Exception ex){ShowError(ex.Message);} return Task.CompletedTask;});
-        var copy=new HubButton(); Button(copy,"Copy Device String",()=>{Clipboard.SetText(arguments.Text); banner.Text="Device string copied. Set GQRX input rate to match Sample Rate.";return Task.CompletedTask;});
-        var logs=new HubButton(); Button(logs,"Open Logs",()=>{Process.Start(new ProcessStartInfo(files.LogDirectory){UseShellExecute=true}); return Task.CompletedTask;});
-        var grc=new HubButton(); Button(grc,"Launch GNU Radio",()=>{files.LaunchGnuRadio(this.options);return Task.CompletedTask;});
-        buttons.Controls.AddRange([start,halt,gqrx,grc,copy,logs]); root.Controls.Add(buttons);
-        root.Controls.Add(new Panel{Dock=DockStyle.Fill,BackColor=Background}); // spacer: buttons -> footer
-        details.Dock=DockStyle.Fill; details.AutoSize=true; details.TextAlign=ContentAlignment.MiddleLeft; details.ForeColor=Muted; details.Font=new Font(Font.FontFamily,9); details.Margin=new Padding(0); root.Controls.Add(details);
-        tips.SetToolTip(details,"Uptime, Hub CPU load (cores), logger drop count, and log folder path.");
+        var root=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(20),ColumnCount=1,RowCount=4};
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent,100));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(root);
+        var heading=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=2,Padding=new Padding(0,0,0,14)};
+        heading.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));heading.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        var title=Label("VST Bridge",22,Color.White);title.AutoSize=true;title.Margin=new Padding(0,0,18,0);heading.Controls.Add(title,0,0);
+        var statuses=new FlowLayoutPanel{AutoSize=true,WrapContents=false,Anchor=AnchorStyles.Right};
+        foreach(var badge in new[]{state,txBadge}){badge.AutoSize=true;badge.Font=new Font(Font,FontStyle.Bold);badge.BackColor=PanelColor;badge.ForeColor=Accent;badge.Padding=new Padding(12,9,12,9);badge.Margin=new Padding(8,0,0,0);statuses.Controls.Add(badge);}
+        state.Text="RX · Initializing";txBadge.Text="TX · Initializing";heading.Controls.Add(statuses,1,0);root.Controls.Add(heading,0,0);
+        Tip(state,"Receive direction and client status. Hardware initialization steps appear in Logs & Debug.");Tip(txBadge,"Transmit direction. No client data is an idle state; hardware faults are shown separately.");
+        banner.Dock=DockStyle.Fill;banner.AutoSize=true;banner.Padding=new Padding(10,6,10,6);banner.BackColor=PanelColor;banner.Visible=false;root.Controls.Add(banner,0,1);
+        var tabs=new MonitorTabs{Dock=DockStyle.Fill,Padding=new Point(18,8)};root.Controls.Add(tabs,0,2);
+        var bridge=Page(tabs,"Bridge");BuildBridge(bridge);var overview=Page(tabs,"RX Monitor");var txPage=Page(tabs,"TX Monitor");
+        var connection=Page(tabs,"RX Configuration");var txSetup=Page(tabs,"TX Configuration");var logPage=Page(tabs,"Logs & Debug");
+        BuildOverview(overview);BuildConnection(connection);BuildTxMonitor(txPage);BuildTxConfiguration(txSetup);
+        var logLayout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2};logLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));logLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));logPage.Controls.Add(logLayout);
+        events.Multiline=true;events.ReadOnly=true;events.ScrollBars=ScrollBars.Both;events.WordWrap=false;events.Dock=DockStyle.Fill;
+        events.BackColor=PanelColor;events.ForeColor=Muted;events.Font=new Font("Consolas",10);logLayout.Controls.Add(events);
+        var logs=new HubButton();Button(logs,"Open Logs",()=>{Process.Start(new ProcessStartInfo(files.LogDirectory){UseShellExecute=true});return Task.CompletedTask;});
+        var export=new HubButton();Button(export,"Export Snapshot",()=>{using var dialog=new SaveFileDialog{Filter="JSON snapshot|*.json",FileName="vst-bridge-diagnostics.json"};if(dialog.ShowDialog(this)==DialogResult.OK)AppFiles.Atomic(dialog.FileName,JsonDefaults.Serialize(engine.Snapshot));return Task.CompletedTask;});
+        logLayout.Controls.Add(ActionRow(logs,export));Tip(events,"Initialization stages, application launches, configuration changes, client lifecycle and errors. Full UTC JSONL files are retained on disk.");
+        BuildFooter(root);
+        Tip(details,files.LogDirectory);
         timer.Tick+=(_,_)=>RefreshSnapshot();
         Shown+=(_,_)=>
         {
-            try {banner.Text=files.InstallPlugin(this.options);} catch(Exception ex) {ShowError(ex.Message);}
+            engine.Log.Event("INFO","bridge.starting","Checking application settings and embedded Soapy plugin");
+            try {var message=files.InstallPlugin(this.options);engine.Log.Event("INFO","plugin.ready",message);} catch(Exception ex) {ShowError(ex.Message);engine.Log.Event("ERROR","plugin.install_failed",ex.Message);}
             engine.Start(); timer.Start();
             if(renderCheck!=null)
             {
@@ -107,9 +97,29 @@ internal sealed partial class MonitorForm : Form
         FormClosing+=async(_,e)=>
         {
             if(canClose) return; e.Cancel=true; if(closing) return; closing=true; timer.Stop(); Enabled=false;
-            Text="VST Hub · Releasing device…";
+            Text="VST Bridge · Releasing device…";
             await Task.Run(()=>{ try {engine.Dispose();} catch { } }); canClose=true; Close();
         };
+    }
+    private void BuildFooter(TableLayoutPanel root)
+    {
+        var footer=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,ColumnCount=1,RowCount=2,Padding=new Padding(0,10,0,0)};
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        Button(start,"Start RX",async()=>{if(!engine.IsAlive)engine.Start();else await Send("START");});
+        Button(halt,"Stop RX",async()=>await Send("STOP"));
+        Button(txStart,"Start TX",async()=>{var config=TxDraft();config.Validate();if(await Send("TXSTART "+JsonDefaults.Serialize(config)))SaveTxDraft(config);});
+        Button(txStop,"Stop TX",async()=>await Send("TXSTOP"));
+        var controls=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,ColumnCount=2,RowCount=1,BackColor=PanelColor,Padding=new Padding(12)};
+        controls.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));controls.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
+        controls.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        controls.Controls.Add(ActionRow(start,halt),0,0);controls.Controls.Add(ActionRow(txStart,txStop),1,0);
+        Tip(start,"Start RX independently of TX, using the applied RX configuration.");Tip(halt,"Stop RX independently of TX.");
+        Tip(txStart,"Start TDMS/CS16 playback using the TX Configuration values and Enable RF selection. GNU Radio live TX starts from its Soapy sink.");
+        Tip(txStop,"Stop TX and disable RF independently of RX.");
+        footer.Controls.Add(controls,0,0);
+        details.Dock=DockStyle.Fill;details.AutoSize=true;details.ForeColor=Muted;details.Font=new Font(Font.FontFamily,9);details.Padding=new Padding(0,6,0,0);
+        footer.Controls.Add(details,0,1);root.Controls.Add(footer,0,3);
     }
     private TabPage Page(TabControl tabs,string text)
     {
@@ -121,7 +131,7 @@ internal sealed partial class MonitorForm : Form
     {
         var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=6};
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        foreach(var h in new[]{34,48,48,56}) layout.RowStyles.Add(new RowStyle(SizeType.Absolute,h));
+        for(int i=0;i<4;i++) layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent,100)); parent.Controls.Add(layout);
 
         var cards=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true};
@@ -139,11 +149,11 @@ internal sealed partial class MonitorForm : Form
         cards.Controls.Add(cardClient,2,0);
         layout.Controls.Add(cards);
 
-        pipelineDetail.Dock=DockStyle.Fill; pipelineDetail.ForeColor=Muted; pipelineDetail.TextAlign=ContentAlignment.MiddleLeft; layout.Controls.Add(pipelineDetail);
+        pipelineDetail.AutoSize=true; pipelineDetail.Padding=new Padding(4,8,4,8); pipelineDetail.Dock=DockStyle.Fill; pipelineDetail.ForeColor=Muted; pipelineDetail.TextAlign=ContentAlignment.MiddleLeft; layout.Controls.Add(pipelineDetail);
         Tip(pipelineDetail,"Configured sample rate (applied NI-RFSA IQ rate) plus RF center, reference, preamp, and bandwidth. Live Gbps is under each Msps tile (RateHz x 32e-9).");
         BufferRow(layout,"DMA FIFO",fifoLabel,fifo,"FPGA host DMA FIFO occupancy. High values mean the host is not draining the FIFO fast enough.");
         BufferRow(layout,"Shared Memory",ringLabel,ring,"Named shared-memory ring occupancy and queued time at the applied sample rate.");
-        diagnostics.Dock=DockStyle.Fill; diagnostics.ForeColor=Muted; diagnostics.Padding=new Padding(4,6,0,0); layout.Controls.Add(diagnostics);
+        diagnostics.AutoSize=true; diagnostics.Dock=DockStyle.Fill; diagnostics.ForeColor=Muted; diagnostics.Padding=new Padding(4,6,0,0); layout.Controls.Add(diagnostics);
         Tip(diagnostics,
             "Dropped: samples lost while an active consumer lagged behind the producer.\r\n"+
             "FIFO overflows: FPGA DMA FIFO overflow events (hardware overrun).\r\n"+
@@ -158,13 +168,13 @@ internal sealed partial class MonitorForm : Form
     }
     private Control Card(string name,Label value,Label gbps,string hint,string tip)
     {
-        var panel=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=1,RowCount=4,BackColor=PanelColor,Margin=new Padding(4),Padding=new Padding(12)};
+        var panel=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=1,RowCount=3,BackColor=PanelColor,Margin=new Padding(4),Padding=new Padding(12)};
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        for(int i=0;i<4;i++) panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        for(int i=0;i<3;i++) panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         var heading=Label(name,11,Muted); var note=Label(hint,8,Muted);
         value.Text="- MS/s"; value.Font=new Font("Segoe UI",18,FontStyle.Bold); value.ForeColor=Accent;
         gbps.Text="- Gbps"; gbps.Font=new Font("Segoe UI",10f); gbps.ForeColor=Muted;
-        var rows=new[]{heading,value,gbps,note};
+        var rows=new[]{heading,value,gbps};
         for(int i=0;i<rows.Length;i++) {
             rows[i].AutoSize=true; rows[i].AutoEllipsis=false; rows[i].Dock=DockStyle.Fill;
             rows[i].Margin=new Padding(0,i==3?12:0,0,4);
@@ -175,83 +185,15 @@ internal sealed partial class MonitorForm : Form
     }
     private void BufferRow(TableLayoutPanel parent,string title,Label caption,MeterBar bar,string tip)
     {
-        var panel=new Panel{Dock=DockStyle.Fill,Padding=new Padding(4,2,4,6)};
-        caption.Text=title; caption.AutoEllipsis=false; caption.Dock=DockStyle.Top; caption.Height=24; caption.ForeColor=Muted; caption.TextAlign=ContentAlignment.MiddleLeft;
-        bar.Dock=DockStyle.Bottom; bar.Height=12;
-        panel.Controls.Add(caption); panel.Controls.Add(bar); parent.Controls.Add(panel);
+        var panel=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=1,RowCount=2,Padding=new Padding(4,6,4,10)};
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));panel.RowStyles.Add(new RowStyle(SizeType.Absolute,14));
+        caption.Text=title;caption.AutoSize=true;caption.AutoEllipsis=false;caption.Dock=DockStyle.Fill;caption.ForeColor=Muted;caption.Margin=new Padding(0,0,0,7);
+        bar.Dock=DockStyle.Fill;bar.Margin=new Padding(0);panel.Controls.Add(caption,0,0);panel.Controls.Add(bar,0,1);parent.Controls.Add(panel);
         Tip(panel,tip); Tip(caption,tip); Tip(bar,tip);
     }
-    private void BuildConnection(Control parent)
-    {
-        var layout=new TableLayoutPanel{Dock=DockStyle.Fill,AutoScroll=true,ColumnCount=2,Padding=new Padding(4)};
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,230));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        parent.Controls.Add(layout);
-
-        void Row(string name,Control control,int height=44,string? tip=null)
-        {
-            int row=layout.RowCount++; layout.RowStyles.Add(new RowStyle(SizeType.Absolute,height));
-            var label=Label(name,10,Muted); label.AutoEllipsis=false; label.Dock=DockStyle.Fill; label.TextAlign=ContentAlignment.MiddleLeft;
-            if(control is Button)
-            {
-                control.Dock=DockStyle.Left; control.Margin=new Padding(4,4,8,4);
-                control.MinimumSize=new Size(160,32);
-            }
-            else
-            {
-                control.Dock=DockStyle.Fill; control.Margin=new Padding(4,6,8,6);
-            }
-            if(control is TextBox tb){ tb.MinimumSize=new Size(200,28); }
-            if(control is NumericUpDown nud){ nud.MinimumSize=new Size(160,28); }
-            layout.Controls.Add(label,0,row); layout.Controls.Add(control,1,row);
-            if(tip!=null){ Tip(label,tip); Tip(control,tip); }
-        }
-
-        void StyleNumeric(NumericUpDown nud)
-        {
-            nud.BackColor=PanelColor; nud.ForeColor=Color.WhiteSmoke; nud.BorderStyle=BorderStyle.FixedSingle;
-        }
-        StyleNumeric(sampleRate); StyleNumeric(frequency); StyleNumeric(reference); StyleNumeric(ringMiB);
-
-        arguments.Text=AppFiles.DeviceArguments(options); arguments.ReadOnly=true; arguments.BackColor=PanelColor; arguments.ForeColor=Color.WhiteSmoke;
-        Row("GQRX device string",arguments,44,"Paste into GQRX Device. VST Hub uses driver=vst and Local\\vst_live_v2 shared memory.");
-
-        sampleRate.Minimum=1; sampleRate.Maximum=120; sampleRate.DecimalPlaces=3; sampleRate.Increment=1;
-        sampleRate.Value=ClampDecimal((decimal)(options.Rx.RateHz/1e6),sampleRate.Minimum,sampleRate.Maximum);
-        Row("Sample rate / MS/s",sampleRate,44,"NI Streaming for VST / ContinuousDma IQ rate. Valid range 1-120 MS/s. Driver may coerce; Hub shows the read-back rate. Match GQRX input rate after Apply.");
-
-        frequency.Minimum=65; frequency.Maximum=6000; frequency.DecimalPlaces=6; frequency.Increment=1; frequency.Value=ClampDecimal((decimal)(options.Rx.CenterHz/1e6),frequency.Minimum,frequency.Maximum);
-        reference.Minimum=-50; reference.Maximum=30; reference.DecimalPlaces=1; reference.Value=ClampDecimal((decimal)options.Rx.ReferenceDbm,reference.Minimum,reference.Maximum);
-        Row("Center / MHz",frequency,44,"RF center frequency (65 MHz - 6 GHz). Applied to the live NI-RFSA session.");
-        Row("Reference / dBm",reference,44,"NI-RFSA reference level in dBm (-50 ... +30). Not a linear software gain.");
-
-        var preamp=Label("Auto (driver selects On/Off)",10,Color.WhiteSmoke); preamp.TextAlign=ContentAlignment.MiddleLeft;
-        Row("Preamplifier",preamp,40,"5644R exposes Auto only. Actual On/Off is read back on Overview.");
-
-        ringMiB.Minimum=64; ringMiB.Maximum=1024; ringMiB.Increment=64; ringMiB.DecimalPlaces=0;
-        ringMiB.Value=ClampDecimal(options.RingMiB,ringMiB.Minimum,ringMiB.Maximum);
-        Row("Shared memory / MiB",ringMiB,44,"Named IQ ring capacity (64-1024 MiB, steps of 64). Changing size recreates the ring; Stop RX first, then Apply. Soapy consumers must reconnect.");
-
-        Button(apply,"Apply RX Settings",ApplyRxAsync);
-        Row("",apply,52,"Apply center, sample rate, and reference to the running session. Shared-memory size applies when RX is stopped.");
-
-        gqrxPath.Text=options.GqrxPath; gqrxPath.BackColor=PanelColor; gqrxPath.ForeColor=Color.WhiteSmoke;
-        Row("GQRX executable",gqrxPath,44,"Path to radioconda Library\\bin\\gqrx.exe (x64 Soapy 0.8).");
-        Button(applyPath,"Save Path && Install Plugin",()=>
-        {
-            try {var updated=options with {GqrxPath=gqrxPath.Text.Trim()}; files.InstallPlugin(updated); files.Save(updated); options=updated; arguments.Text=AppFiles.DeviceArguments(options); banner.Text="GQRX path saved; Soapy plugin checked.";}
-            catch(Exception ex) {ShowError(ex.Message);} return Task.CompletedTask;
-        });
-        Row("",applyPath,52,"Save the GQRX path and install/verify the embedded Soapy module.");
-
-        var note=Label("One RX consumer at a time: GQRX or GNU Radio. TX may run independently from a file or GNU Radio / SoapySDR.",9,Muted);
-        note.AutoEllipsis=false; note.AutoSize=false; note.TextAlign=ContentAlignment.MiddleLeft;
-        Row("Notes",note,64,"Hover Overview metrics for detailed English tooltips. Verbose help is kept out of the main layout.");
-    }
-    private static decimal ClampDecimal(decimal value,decimal min,decimal max) => Math.Min(max,Math.Max(min,value));
     private async Task ApplyRxAsync()
     {
-        int requestedRing=(int)ringMiB.Value;
+        int requestedRing=IntegerChoice(ringMiB);
         if(requestedRing%64!=0) {ShowError("Shared memory size must be a multiple of 64 MiB."); return;}
         var requested=options.Rx with {
             CenterHz=(double)frequency.Value*1e6,
@@ -317,8 +259,10 @@ internal sealed partial class MonitorForm : Form
         if(engine.ShutdownRequested) {Close(); return;}
         var s=engine.Snapshot;
         RefreshTx(s.Tx);
-        state.Text=s.Status switch {EngineState.RUNNING=>s.ClientState,EngineState.INITIALIZING=>"Initializing…",EngineState.TUNING=>"Configuring…",EngineState.RECOVERING=>"Recovering…",EngineState.STOPPED=>"RX stopped",_=>"Attention required"};
-        state.ForeColor=s.Status==EngineState.ERROR?Color.Salmon:Accent;
+        state.Text="RX · "+(s.Status switch {EngineState.RUNNING=>"Running",EngineState.INITIALIZING=>"Initializing",EngineState.TUNING=>"Configuring",EngineState.RECOVERING=>"Recovering",EngineState.STOPPED=>"Stopped",_=>"Error"});
+        state.ForeColor=s.Status==EngineState.ERROR?Color.Salmon:s.Status==EngineState.STOPPED?Muted:Accent;
+        txBadge.Text="TX · "+(s.Status==EngineState.INITIALIZING&&!s.Capabilities.Tx?"Initializing":TxStatusText(s.Tx.Status));
+        txBadge.ForeColor=s.Tx.Status=="FAULT"?Color.Salmon:s.Tx.Status=="WAITING_CLIENT"?Color.Goldenrod:s.Tx.Status=="STREAMING"?Accent:Muted;
         dma.Text=$"{s.DmaMsps:F2} MS/s"; shm.Text=$"{s.ShmMsps:F2} MS/s"; client.Text=$"{s.DeliveredMsps:F2} MS/s";
         dmaGbps.Text=$"{HubOptions.RawIqGbps(s.DmaMsps*1e6):F3} Gbps";
         shmGbps.Text=$"{HubOptions.RawIqGbps(s.ShmMsps*1e6):F3} Gbps";
@@ -331,19 +275,17 @@ internal sealed partial class MonitorForm : Form
         pipelineDetail.Text=$"Sample rate {rate/1e6:F3} MS/s   ·   RF {s.AppliedCenterHz/1e6:F3} MHz   ·   Ref {s.AppliedRefDbm:F1} dBm   ·   Preamp {s.PreampActual}   ·   BW {s.EffectiveBandwidthHz/1e6:F1} MHz";
         diagnostics.Text=$"Dropped {s.Ring.Drops:N0}   ·   FIFO overflows {s.OverflowCount}   ·   Recoveries {s.Recoveries}   ·   Epoch {s.Ring.Epoch}   ·   Last configure {s.LastTuneS*1000:F0} ms\r\n"+
             $"Producer heartbeat {s.Ring.HeartbeatAgeMs} ms   ·   Client heartbeat {(s.Ring.ConsumerHeartbeatAgeMs==ulong.MaxValue?"-":s.Ring.ConsumerHeartbeatAgeMs.ToString())} ms   ·   Idle overwrites {s.Ring.IdleDiscardSamples:N0}";
-        var message=s.Error??(!string.IsNullOrEmpty(s.LogError)?"Log write failed: "+s.LogError:s.Status==EngineState.RUNNING?
-            (s.Ring.ConsumerActive?"RX delivering to client. TX and RX have independent controls and monitoring.":"Bridge ready. Choose GQRX or GNU Radio; match the client sample rate."):
-            "Start RX, then connect one GQRX or GNU Radio consumer.");
         bool hasNotice=notice.Length>0 && DateTime.UtcNow<noticeUntil;
-        banner.Text=hasNotice?notice:message; banner.ForeColor=hasNotice||s.Error!=null||s.LogError.Length>0?Color.Salmon:Muted;
-        details.Text=$"Uptime {TimeSpan.FromSeconds(s.ElapsedS):hh\\:mm\\:ss}   ·   Hub CPU {s.CpuCores:F2} cores   ·   Log drops {s.LogDropped}   ·   {files.LogDirectory}";
+        var message=hasNotice?notice:s.Error??(s.LogError.Length>0?"Log write failed: "+s.LogError:"");
+        banner.Text=message;banner.Visible=message.Length>0;banner.ForeColor=Color.Salmon;
+        details.Text=$"v2.2 · Uptime {TimeSpan.FromSeconds(s.ElapsedS):hh\\:mm\\:ss}   ·   CPU {s.CpuCores:F2} cores   ·   Log drops {s.LogDropped}";
         start.Enabled=s.Status is EngineState.STOPPED or EngineState.ERROR;
         halt.Enabled=s.Status is EngineState.RUNNING; apply.Enabled=true;
         gqrx.Enabled=true; RefreshBridge(s);
         ringMiB.Enabled=s.Status is EngineState.STOPPED or EngineState.ERROR or EngineState.INITIALIZING;
         // Configuration controls are an editable draft. Applied values are shown in monitors.
         trend.Add(s.DmaMsps,s.DeliveredMsps);
-        string history=string.Join(Environment.NewLine,engine.Log.Recent.Reverse());
+        string history=string.Join(Environment.NewLine,engine.Log.Recent);
         if(history!=lastEvents) {events.Text=history; lastEvents=history;}
         if(Interlocked.CompareExchange(ref writingStatus,1,0)==0) _=Task.Run(()=>
         {
@@ -353,6 +295,19 @@ internal sealed partial class MonitorForm : Form
         });
     }
     private int writingStatus;
+}
+
+internal sealed class HubCheckBox : CheckBox
+{
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        if(Enabled){base.OnPaint(e);return;}
+        e.Graphics.Clear(BackColor);
+        int side=Math.Max(12,(int)(13*DeviceDpi/96f));int y=(Height-side)/2;
+        using var border=new Pen(Color.FromArgb(145,161,181));e.Graphics.DrawRectangle(border,0,y,side,side);
+        if(Checked)e.Graphics.DrawLines(border,[new Point(3,y+side/2),new Point(side/2,y+side-3),new Point(side-2,y+2)]);
+        TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(side+6,0,Width-side-6,Height),Color.FromArgb(145,161,181),TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.SingleLine);
+    }
 }
 
 internal sealed class HubButton : Button
@@ -418,7 +373,8 @@ internal sealed class TrendPlot : Control
         base.OnPaint(e); var g=e.Graphics; g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
         using var font=new Font("Segoe UI",9); using var gray=new SolidBrush(Color.FromArgb(153,174,192));
         g.DrawString(Caption,font,gray,12,8);
-        var rect=new RectangleF(44,36,Math.Max(1,Width-60),Math.Max(1,Height-56));
+        float top=font.GetHeight(g)+26;
+        var rect=new RectangleF(48,top,Math.Max(1,Width-64),Math.Max(1,Height-top-20));
         using var grid=new Pen(Color.FromArgb(40,57,73));
         int divisions=rect.Height>=3*font.GetHeight(g)+12?3:1;
         for(int i=0;i<=divisions;i++) {float y=rect.Bottom-i*rect.Height/divisions; g.DrawLine(grid,rect.Left,y,rect.Right,y); g.DrawString((i*150/divisions).ToString(),font,gray,4,y-9);}

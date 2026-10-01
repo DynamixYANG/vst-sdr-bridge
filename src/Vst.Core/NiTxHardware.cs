@@ -72,7 +72,10 @@ internal sealed class NiTxHardware : ITxHardware
     }
     public void Write(nint interleavedIq,int complexSamples)
     {
-        Check(TxNative.NiFpgaDll_WriteFifoU32(device.Fpga,fifo,interleavedIq,(nuint)complexSamples,500,out var free),"TX DMA write");Free=free;
+        // A 1 Mi-sample block takes >1 s at 1 MS/s. Account for the
+        // configured drain rate when a full FIFO applies backpressure.
+        uint timeout=(uint)Math.Ceiling(complexSamples/Rate*1000)+500;
+        Check(TxNative.NiFpgaDll_WriteFifoU32(device.Fpga,fifo,interleavedIq,(nuint)complexSamples,timeout,out var free),"TX DMA write");Free=free;
     }
     public unsafe void RefreshFree()
     {

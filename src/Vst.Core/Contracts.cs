@@ -63,6 +63,8 @@ public sealed record HubOptions
     public int LogRetentionDays { get; init; } = 14;
     public string GnuRadioPath { get; init; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"radioconda\Scripts\gnuradio-companion.exe");
     public string GqrxPath { get; init; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"radioconda\Library\bin\gqrx.exe");
+    public string GnuRadioArguments { get; init; } = "";
+    public string GqrxArguments { get; init; } = "";
     public string BitfilePath { get; init; } = @"C:\Users\Public\Documents\National Instruments\FPGA Extensions Bitfiles\NI PXIe-5644R\NI Streaming for VST.lvbitx";
     public RxConfiguration Rx { get; init; } = new();
     public TxConfiguration Tx { get; init; } = new();

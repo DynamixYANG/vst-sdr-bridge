@@ -10,6 +10,7 @@ public sealed class HubEngine : IDisposable
     private readonly HubOptions options;
     private readonly Func<HubOptions,IRxHardware>? factory;
     private TxEngine? tx;
+    private TxConfiguration liveDefaults;
     private readonly ConcurrentQueue<Request> requests=new();
     private readonly AutoResetEvent wake=new(false);
     private readonly CancellationTokenSource stop=new();
@@ -23,13 +24,14 @@ public sealed class HubEngine : IDisposable
     private readonly string session=Guid.NewGuid().ToString("N")[..12];
     public HubEngine(HubOptions options,string logDirectory,Func<HubOptions,IRxHardware>? factory=null)
     {
-        options.Validate(); this.options=options; this.factory=factory;
+        options.Validate(); this.options=options; this.factory=factory; liveDefaults=options.Tx;
         Log=new RotatingLog(logDirectory,session,options.LogFileMiB*1048576L,options.LogFiles,options.LogRetentionDays);
     }
     public void Start()
     {
         if(IsAlive) throw new InvalidOperationException("Engine already started");
         worker=new Thread(Run){Name="VST RX device owner",IsBackground=true,Priority=ThreadPriority.AboveNormal};
+        Log.Event("INFO","bridge.worker_start","Starting shared-device owner and RX worker");
         worker.Start();
     }
     public Task<string> Command(string line)
@@ -89,6 +91,7 @@ public sealed class HubEngine : IDisposable
             // Center/reference may retune with TX running (independent TX/RX settings).
             requested.Validate(); state=EngineState.TUNING; ring!.Pause(); Telemetry();
             var t=Stopwatch.StartNew();
+            Log.Event("INFO","rx.configuring",requested);
             var readback=hardware!.Configure(requested);
             hardware.Read(); hardware.Read();
             if(hardware.Overflow) throw new NiException("Configure overflow",-1,"FPGA overflow while settling");
@@ -102,7 +105,8 @@ public sealed class HubEngine : IDisposable
             if(factory!=null) hardware=factory(options);
             else
             {
-                if(device==null) {device=new NiDeviceSession(options);tx=new TxEngine(device,Log);}
+                if(device==null) {device=new NiDeviceSession(options,message=>Log.Event("INFO","device.initializing",message));tx=new TxEngine(device,Log);}
+                Log.Event("INFO","rx.initializing",new {stage="Allocating RX DMA FIFO",options.FifoMiB,options.BlockSamples});
                 hardware=new NiRxHardware(options,device);
             }
             Configure(config);
@@ -112,7 +116,9 @@ public sealed class HubEngine : IDisposable
         {
             try {owns=owner.WaitOne(0);} catch(AbandonedMutexException) {owns=true;}
             if(!owns) throw new InvalidOperationException("Another bridge owns this device. Stop it, then retry or restart Hub.");
+            Log.Event("INFO","control.initializing",new {address="127.0.0.1",options.ControlPort});
             server=new ControlServer(this,options.ControlPort); // reserve port before touching hardware
+            Log.Event("INFO","rx.shared_memory",new {options.RingName,options.RingMiB});
             ring=new SharedIqRing(options.RingName,options.RingMiB);
             try {Open();} catch(Exception ex) {state=EngineState.ERROR; error=ex.Message; hardware?.Dispose(); hardware=null; Log.Event("ERROR","rx.start_failed",error); Telemetry();}
             while(!stop.IsCancellationRequested)
@@ -125,14 +131,33 @@ public sealed class HubEngine : IDisposable
                     {
                         if(Environment.TickCount64>request.Deadline) throw new TimeoutException("Request expired before execution; not applied");
                         if(request.Line=="SHUTDOWN") {shutdownRequested=true; reply="OK application shutting down";}
+                        else if(request.Line=="TXIDLE")
+                        {
+                            tx?.Stop(clientStopped:true);reply="OK TX client idle";
+                        }
                         else if(request.Line=="TXSTOP")
                         {
                             tx?.Stop();reply="OK TX stopped";
+                        }
+                        else if(request.Line.StartsWith("TXDEFAULTS "))
+                        {
+                            var requested=JsonSerializer.Deserialize<TxConfiguration>(request.Line[11..],JsonDefaults.Options)??throw new ArgumentException("TX defaults required");
+                            (requested with {Source="live_ring"}).Validate();
+                            liveDefaults=requested;reply="OK TX buffer defaults saved for next client start";
                         }
                         else if(request.Line.StartsWith("TXSTART "))
                         {
                             if(tx==null) throw new InvalidOperationException("Shared device session is not ready. Hub must finish opening RFSA/RFSG/FPGA before TXSTART (independent of RX streaming).");
                             var requested=JsonSerializer.Deserialize<TxConfiguration>(request.Line[8..],JsonDefaults.Options)??throw new ArgumentException("TX configuration required");
+                            if(requested.IsLiveRing)
+                            {
+                                using var json=JsonDocument.Parse(request.Line[8..]);
+                                requested=requested with {
+                                    QueueMiB=json.RootElement.TryGetProperty("queue_mi_b",out _)?requested.QueueMiB:liveDefaults.QueueMiB,
+                                    FifoMiB=json.RootElement.TryGetProperty("fifo_mi_b",out _)?requested.FifoMiB:liveDefaults.FifoMiB,
+                                    PrefillBlocks=json.RootElement.TryGetProperty("prefill_blocks",out _)?requested.PrefillBlocks:liveDefaults.PrefillBlocks
+                                };
+                            }
                             tx.Start(requested);reply="OK TX startup requested; inspect tx.status for completion";
                         }
                         else if(request.Line=="STOP")

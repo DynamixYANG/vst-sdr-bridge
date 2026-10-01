@@ -256,8 +256,8 @@ SoapySDR::RangeList Device::getFrequencyRange(const int, const size_t, const std
 void Device::setSampleRate(const int direction, const size_t, const double rate)
 {
   if (direction == SOAPY_SDR_TX) {
-    if (std::abs(rate - 120e6) > 1.0)
-      throw std::invalid_argument("TX sample rate must be 120e6 in this release");
+    if (!std::isfinite(rate) || rate < 1e6 || rate > 120e6)
+      throw std::invalid_argument("TX sample rate must be 1 to 120 MS/s");
     bool restart = false;
     {
       std::lock_guard<std::mutex> lock(_mutex);
@@ -295,13 +295,13 @@ double Device::getSampleRate(const int direction, const size_t) const
 
 SoapySDR::RangeList Device::getSampleRateRange(const int direction, const size_t) const
 {
-  if (direction == SOAPY_SDR_TX) return {SoapySDR::Range(120e6, 120e6)};
+  if (direction == SOAPY_SDR_TX) return {SoapySDR::Range(1e6, 120e6)};
   return {SoapySDR::Range(1e6, 120e6)};
 }
 
 std::vector<double> Device::listSampleRates(const int direction, const size_t) const
 {
-  if (direction == SOAPY_SDR_TX) return {120e6};
+  if (direction == SOAPY_SDR_TX) return {1e6,5e6,10e6,20e6,30.72e6,40e6,60e6,61.44e6,80e6,100e6,120e6};
   return {1e6, 5e6, 10e6, 20e6, 40e6, 80e6, 90e6, 100e6, 120e6};
 }
 
@@ -422,7 +422,7 @@ void Device::writeSetting(const std::string &key, const std::string &value)
         _txCenterHz = v;
       } else if (key=="tx_rate_hz") {
         const double v = std::stod(value);
-        if (std::abs(v - 120e6) > 1.0) throw std::invalid_argument("TX sample rate must be 120e6 in this release");
+        if (!std::isfinite(v) || v < 1e6 || v > 120e6) throw std::invalid_argument("TX sample rate must be 1 to 120 MS/s");
         _txRate = v;
       } else if (key=="tx_ring") {
         if (_txActive) throw std::runtime_error("cannot change tx_ring while TX streaming");

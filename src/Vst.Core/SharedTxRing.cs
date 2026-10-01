@@ -68,6 +68,7 @@ public sealed unsafe class SharedTxRing : IDisposable
     {
         WithLock(() =>
         {
+            if(rateHz > 0) F64(8) = rateHz;
             F64(128) = centerHz; F64(144) = rateHz; F64(136) = peakDbm;
             U32(152) = rfEnabled ? 1u : 0u;
             U32(60) = 1; U32(92) = (uint)Environment.ProcessId; U64(104) = GetTickCount64();

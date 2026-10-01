@@ -4,14 +4,16 @@
 
 界面名称更新为 VST Bridge，程序文件仍为 `VSTHub.exe`，保留 `driver=vst`、控制协议和共享内存端点，兼容原有工程。GQRX 用于接收；GNU Radio 可用于接收、发射及全双工。两者可同时打开，但只能有一个应用消费 RX IQ 数据；GNU Radio 仅发射流程可与 GQRX 接收并行。
 
+**2.2.0 界面更新**：RX/TX 独立状态框位于右上角；TX/RX 的 Start/Stop 按钮固定在主窗口底栏，切换任何页面均可使用；RX/TX 数字设置使用统一深色底、白字的可编辑推荐下拉框（含展开列表和箭头）；TX queue、FIFO、预填充均可配置；选项帮助以鼠标悬浮显示。客户端停止发送 IQ 显示“ No client data ”并关闭 RF，不记为程序错误；硬件故障仍保留错误与计数。初始化阶段、插件检查和应用启动写入 Logs & Debug。
+
 ## 功能
 
 | 模块 | 能力 |
 |---|---|
-| Bridge 总览 | 展示 TX/RX 状态、实际速率、数据路径、客户端和控制端口 |
-| 应用启动 | 选择启动 GNU Radio Companion 或 GQRX，配置程序路径 |
+| Bridge | 配置 GQRX / GNU Radio 程序路径、启动参数并启动应用 |
+| 应用启动 | 选择启动 GNU Radio Companion 或 GQRX，配置程序路径及启动参数 |
 | RX | 1–120 MS/s；65 MHz–6 GHz；参考电平 −50 至 +30 dBm；自动前置放大器 |
-| TX | 120 MS/s；独立中心频率与 −50 至 0 dBm 峰值设置；显式 RF 开关 |
+| TX | 1–120 MS/s；独立中心频率与 −50 至 0 dBm 峰值设置；显式 RF 开关 |
 | 独立运行 | RX 单独、TX 单独、TX/RX 同时运行；互不依赖启动/停止 |
 | 文件播放 | 直接读取 TDMS 的 I/Q 通道，或带校验 JSON 的 CS16 文件，内存循环播放 |
 | 实时发射 | 原生 SoapySDR `writeStream`，支持 CF32/CS16，经共享内存送入 Hub |
@@ -25,9 +27,9 @@
 1. 安装 NI-RFSA、NI-RIO/FPGA 支持及 NI Streaming for VST bitfile，准备 x64 radioconda、GNU Radio、GQRX 和 SoapySDR 0.8。
 2. 运行 `dist/VSTHub/VSTHub.exe`。程序持有唯一 NI 会话，初始化 RX，并核对内嵌插件。
 3. 在 **RX Configuration** 设置中心频率、采样率、参考电平，然后应用。停止时保存的 RX 配置会在下次 Start 生效。
-4. 点击 **Launch GQRX** 或 **Launch GNU Radio**。GQRX 设备串为 `soapy=0,driver=vst,resource=RIO0`；GNU Radio 使用 `driver=vst,resource=RIO0`。客户端采样率须与 Hub 一致。
-5. 文件发射：在 **TX Configuration** 选择 TDMS/CS16，设置频率和峰值，按需要勾选 RF，然后 **Start TX**。在 TX Monitor 检查实际速率、队列余量和欠载计数。
-6. **Stop RX** 只停止接收；**Stop TX / RF Off** 停止发射并关闭 RF。关闭 Bridge 会释放两个方向和设备会话。
+4. 在 **Bridge** 页面点击 **Launch GQRX** 或 **Launch GNU Radio**。GQRX 设备串为 `soapy=0,driver=vst,resource=RIO0`；GNU Radio 使用 `driver=vst,resource=RIO0`。客户端采样率须与 Hub 一致。
+5. 文件发射：在 **TX Configuration** 选择 TDMS/CS16，设置频率和峰值，按需要勾选 RF，然后点击固定底栏 **Start TX**。在 TX Monitor 检查实际速率、队列余量和欠载计数。
+6. **Stop RX** 只停止接收；**Stop TX** 停止发射并关闭 RF。关闭 Bridge 会释放两个方向和设备会话。
 
 RX 中心频率/参考电平可在 TX 运行时调整。改变共享采样时钟或重建缓冲区需要先停止 TX。TX 故障会关闭发射并锁定故障状态，须人工明确重启，不会自动重新发射。
 
@@ -37,7 +39,7 @@ RX 中心频率/参考电平可在 TX 运行时调整。改变共享采样时钟
 
 打开 `examples/grc/vst_bridge_120_duplex.grc`。TX 使用预计算 +1 MHz 周期向量，Soapy Sink 送往 Hub；RX 经 Soapy Source 接到真实 Qt 频谱和瀑布图。范例配置为 TX/RX 中心 2500 MHz、TX 峰值 −10 dBm、RX 参考 −20 dBm，显式开启 RF，适用于本次近距离天线耦合验证。
 
-为适应当前 i7-6700 主机，TX 源采用大缓冲，源/发送块调度粒度为 262,144 样本并提高对应线程优先级。生成的 Python 与 GRC 均保留这些设置。需要纯传输测试时，将 Soapy Sink 两处 `rf_enabled=true` 改为 `false`。
+为适应当前 i7-6700 主机，TX 源采用大缓冲，源/发送块调度粒度为 262,144 样本；不依赖 Windows 上未实现的 GNU Radio 线程优先级接口。生成的 Python 与 GRC 均保留这些设置。需要纯传输测试时，将 Soapy Sink 两处 `rf_enabled=true` 改为 `false`。
 
 ### TDMS 四路 NR 载波
 
@@ -74,14 +76,20 @@ TDMS / CS16 → 校验并预加载 ───────────────
 
 在项目根目录执行 `.\build.ps1 -SelfTest`。需要 .NET 10 SDK、MSVC x64、CMake/Ninja、NI 开发头文件/导入库及 radioconda。发布 EXE 包含 .NET 运行时与匹配的原生插件，运行时无需安装独立 .NET 或 Python 桥接服务。
 
-正式验收要求每组连续 1,200 秒：实际 TX/RX 约 120 MS/s，欠载、活动丢样、FIFO 溢出、恢复和日志错误为零，并核查应用频谱图。完整结果见 [VALIDATION.md](docs/VALIDATION.md)；未完成的测试不会标记为 golden。
+GRC 验收连续 1,200 秒；TDMS/GQRX 按用户最新要求接受此前约 17 分钟记录：实际 TX/RX 约 120 MS/s，欠载、活动丢样、FIFO 溢出、恢复和日志错误为零，并核查应用频谱图。完整结果见 [VALIDATION.md](docs/VALIDATION.md)；自动 PASS 与用户接受的参考例子分别标注。
 
 源码、应用 ZIP、独立插件 ZIP、波形/示例、SHA-256 与发布说明会分开组织。NI 驱动及 bitfile 不随项目分发。运行时配置和日志默认保存在 `%LOCALAPPDATA%\VSTHub`，控制端口仅绑定 `127.0.0.1:19788`。
 
 ## 本次验收结果
 
-GNU Radio 实际 GUI 收发连续 1,200.718 秒；TDMS 直接播放及 GQRX 120 MS/s 接收连续 1,200.000 秒。两组均无 TX 欠载、RX 活动丢样、显示跳样、FIFO 溢出、恢复或日志错误。已保留真实应用频谱/瀑布图并标记 golden 范例。
+| Test | Duration / s | RX delivered / MS/s | TX processed / MS/s | Result |
+|---|---:|---:|---:|---|
+| GNU Radio normal main() | 1200.485 | 120.001120 | 120.001129 | PASS |
+| TDMS + GQRX | 1026.875 | 120.001127 | 120.001130 | USER_ACCEPTED (~17 min) |
 
-GQRX 第三载波内存在外部窄带干扰，最初平均功率判定未通过；保留原记录，并用原始 RF 开关频谱复核。四载波带内中位抬升为 25.6/23.9/28.4/28.4 dB，99.5% 以上频点抬升超过 10 dB。方法修订发生在采集后，详细披露见 VALIDATION。应用图片为真实 Qt 窗口渲染抓图；当前 Windows 会话不允许桌面截屏，因此不称为桌面照片。
+GRC 标准 main() 连续 20 分钟通过，作为 golden 范例。TDMS/GQRX 按用户明确指示，以此前约 17 分钟稳定运行及实际四载波频谱/瀑布图作为接受的参考例子。两段有效运行期间实际速率约 120.001 MS/s，欠载、活动丢样、显示跳样、溢出、恢复和日志错误为零。TDMS 原始自动结果仍保留 FAIL：外部启动 GNU Radio 中断 TX；初始频谱的 −30 MHz 载波未达到严格 95% 覆盖判据（65.142%），四路中位增益均超过 10 dB。详见 [VALIDATION.md](docs/VALIDATION.md)。
 
-![GQRX 四载波实测](docs/images/golden-gqrx-four-carrier.png)
+本次最终界面编译只修改底栏/配色，不修改已验证的串流核心及原生插件。最终 EXE 通过 36 项自检、12 张正常/最小窗口实际渲染检查和新的真实硬件独立启停短测。长测 EXE 与最终 UI EXE 的哈希分开保存，不声称此后再次完成 20 分钟。交付时 RF 已关闭。
+
+![最终 TX 配置与固定底栏](docs/images/bridge-tx-config-2.2.png)
+![接受的 GQRX 四载波实测](docs/images/golden-gqrx-four-carrier-2.2.png)

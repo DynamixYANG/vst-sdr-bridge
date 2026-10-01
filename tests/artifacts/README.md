@@ -1,3 +1,5 @@
-# artifacts
+# Test evidence
 
-Current release evidence: per-second status JSONL, result summaries and actual application render images. Older experiments are in archive/validation-before-2.1. Failed and deliberately interrupted attempts are retained and never promoted to golden.
+Current GRC golden acceptance: grc-normal-2.2-20min. TDMS/GQRX operator acceptance: gqrx-tdms-2.2-accepted17; original automatic FAIL and raw evidence: gqrx-tdms-2.2-interrupted. The operator cancelled the repeat in gqrx-tdms-2.2-repeat-cancelled. Hardware controls/delayed-start regressions: tx-controls-2.2, tx-startup-2.2. Final UI build: ui-footer-final-2.2 (12 real renders) and independence-footer-2.2 (real hardware control regression). release-review-2.2.json relates long-run and final UI-only binary identities; release-ui-binary-hashes-2.2.json is the shipped build.
+
+Historical 2.1 acceptance and failed development/manual TIMEOUT attempts remain preserved, with limitations documented in docs/VALIDATION-2.1.md and each relevant record. They are never substituted for current final-build acceptance. Per-folder README files describe contents; golden status comes from ../../docs/VALIDATION.md.

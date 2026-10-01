@@ -19,9 +19,12 @@ def monitor(seconds,out):
     time.sleep(1)
  except Exception as ex:failure=repr(ex)
  a,b=rows[0]['data'],rows[-1]['data'];elapsed=rows[-1]['elapsed']-rows[0]['elapsed']
- rates={'rx_dma_msps':(b['ring']['write_idx']-a['ring']['write_idx'])/max(elapsed,.001)/1e6,'rx_delivered_msps':(b['ring']['delivered_samples']-a['ring']['delivered_samples'])/max(elapsed,.001)/1e6,'tx_processed_msps':(b['tx']['processed_samples']-a['tx']['processed_samples'])/max(elapsed,.001)/1e6}
+ # Counters are published by independent workers. Use each counter's own
+ # snapshot timestamp; TCP observation time includes up to 0.5 s of sample age.
+ rx_elapsed=b['elapsed_s']-a['elapsed_s'];tx_elapsed=b['tx']['elapsed_s']-a['tx']['elapsed_s']
+ rates={'rx_dma_msps':(b['ring']['write_idx']-a['ring']['write_idx'])/max(rx_elapsed,.001)/1e6,'rx_delivered_msps':(b['ring']['delivered_samples']-a['ring']['delivered_samples'])/max(rx_elapsed,.001)/1e6,'tx_processed_msps':(b['tx']['processed_samples']-a['tx']['processed_samples'])/max(tx_elapsed,.001)/1e6}
  checks={'duration':elapsed>=seconds,'rates':all(119.5<v<120.5 for v in rates.values()),'no_failure':failure is None,'no_rx_drop':b['ring']['drops']==a['ring']['drops'],'no_skip':b['ring']['display_skipped']==a['ring']['display_skipped'],'rf_on':all(r['data']['tx']['rf_enabled'] for r in rows)}
- result={'status':'PASS' if all(checks.values()) else 'FAIL','seconds':elapsed,'checks':checks,'rates':rates,'error':failure,'rows':len(rows),'initial':a,'final':b}
+ result={'status':'PASS' if all(checks.values()) else 'FAIL','seconds':elapsed,'checks':checks,'rates':rates,'error':failure,'rows':len(rows),'initial':a,'final':b,'counter_intervals_s':{'rx':rx_elapsed,'tx':tx_elapsed}}
  (out/'result.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps({k:v for k,v in result.items() if k not in ('initial','final')},indent=2),flush=True)
  return result
 if __name__=='__main__':

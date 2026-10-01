@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "rate_hz": 1000000.0,
+      "measured_hz": 1000008.5765022846,
+      "queue_capacity": 16777216,
+      "fifo_capacity": 33554432,
+      "status": "PASS",
+      "no_data_status": "WAITING_CLIENT"
+    },
+    {
+      "rate_hz": 30720000.0,
+      "measured_hz": 30720268.48554138,
+      "queue_capacity": 16777216,
+      "fifo_capacity": 33554432,
+      "status": "PASS",
+      "no_data_status": "WAITING_CLIENT"
+    },
+    {
+      "rate_hz": 60000000.0,
+      "measured_hz": 60000481.38663034,
+      "queue_capacity": 16777216,
+      "fifo_capacity": 33554432,
+      "status": "PASS",
+      "no_data_status": "WAITING_CLIENT"
+    },
+    {
+      "rate_hz": 100000000.0,
+      "measured_hz": 100000883.05419594,
+      "queue_capacity": 16777216,
+      "fifo_capacity": 33554432,
+      "status": "PASS",
+      "no_data_status": "WAITING_CLIENT"
+    },
+    {
+      "rate_hz": 120000000.0,
+      "measured_hz": 120001018.84634861,
+      "queue_capacity": 16777216,
+      "fifo_capacity": 33554432,
+      "status": "PASS",
+      "no_data_status": "WAITING_CLIENT"
+    }
+  ],
+  "tested_binary_sha256": {
+    "VSTHub.exe": "402e38d4fef5139e6a1ff1dd14cc0d91738c1c7db869f265ad6ee5f50fca4cb1",
+    "vstSupport.dll": "c89fc3a7f3bdf65251772daf0d12bd888c537ffc04d87d7eadd3d396ccdef16c"
+  }
+}

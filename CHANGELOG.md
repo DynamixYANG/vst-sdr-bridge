@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0 — 2026-10-01
+
+Permanent RX/TX footer controls, consistent dark editable dropdowns, launch configuration, status badges, monitor layout and initialization logs. Configurable TX rate/queue/FIFO/prefill; no-client idle state. Ordinary GRC TIMEOUT corrected and normal-main 20-minute run passed; TDMS/GQRX ~17-minute interval explicitly accepted by the operator, with original limitations retained.
+
 ## 2.1.0 — VST Bridge
 
 - Reposition desktop UI as GNU Radio / GQRX bridge with application choice and pipeline overview.

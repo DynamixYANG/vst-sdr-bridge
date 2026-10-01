@@ -1,0 +1,3 @@
+# Counter timing review
+
+The original result.json remains FAIL and is unchanged. There were zero TX underflows/stream errors and normal process exit with RF off. The 60.609 s TCP observation span was compared with counters published by independent workers; the RX counter span is 60.817642 s and the TX counter span is 60.308937 s. Using the counters own snapshot intervals yields RX 119.999538 MS/s and TX 120.000858 MS/s. The 2.2 monitor records both worker intervals explicitly and retains the 119.5–120.5 MS/s gate. This is a measurement correction, not a relaxed acceptance threshold. Final 2.2 acceptance is a fresh run.

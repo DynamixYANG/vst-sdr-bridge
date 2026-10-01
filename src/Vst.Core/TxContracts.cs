@@ -18,7 +18,7 @@ public sealed record TxConfiguration
     public void Validate()
     {
         if (!double.IsFinite(CenterHz) || CenterHz < 65e6 || CenterHz > 6e9) throw new ArgumentException("TX frequency: 65 MHz to 6 GHz.");
-        if (RateHz != 120e6) throw new ArgumentException("This TX release supports 120 MS/s only.");
+        if (!double.IsFinite(RateHz) || RateHz < 1e6 || RateHz > 120e6) throw new ArgumentException("TX sample rate must be between 1 and 120 MS/s; the waveform rate must match.");
         if (!double.IsFinite(PeakDbm) || PeakDbm < -50 || PeakDbm > 0) throw new ArgumentException("TX peak level: -50 to 0 dBm.");
         if (QueueMiB is < 16 or > 256 || QueueMiB % 4 != 0 || FifoMiB is < 64 or > 512 || PrefillBlocks is < 4 or > 32 || PrefillBlocks * 4 >= FifoMiB)
             throw new ArgumentException("Invalid TX queue, DMA FIFO, or prefill size.");

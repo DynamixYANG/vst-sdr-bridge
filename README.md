@@ -8,13 +8,15 @@ VST Bridge owns the NI RFSA/RFSG/FPGA session and connects the PXIe-5644R to ope
 
 The product display name is **VST Bridge**. `VSTHub.exe`, `driver=vst`, the control API and shared-memory names remain compatible with VST Hub 2.0. GQRX is an RX client; GNU Radio supports RX, TX and duplex workflows. Exactly one IQ RX consumer may attach at a time.
 
+Version **2.2.0** keeps RX/TX Start/Stop permanently visible in the window footer, applies dark backgrounds and white text to editable dropdowns and their lists, adds independent header status badges, replaces inline notes with hover help, fixes monitor spacing, and exposes initialization stages in Logs & Debug.
+
 ## Features
 
 | Function | Implementation |
 |---|---|
-| Application launcher | GQRX and GNU Radio Companion; configurable executable paths |
+| Application launcher | GQRX and GNU Radio Companion; configurable executable paths and launch arguments |
 | RX | 1–120 MS/s, 65 MHz–6 GHz, reference level −50…+30 dBm, automatic preamplifier |
-| TX | 120 MS/s, independent center and peak level −50…0 dBm, explicit RF enable |
+| TX | 1–120 MS/s, independent center and peak level −50…0 dBm, explicit RF enable |
 | Duplex | Separate RX/TX workers and DMA FIFOs sharing one device session |
 | File playback | Direct TDMS I/Q or CS16 + SHA-256 JSON metadata, repeating preloaded IQ |
 | Live TX | Native SoapySDR `writeStream`, CF32/CS16, bounded shared-memory queue |
@@ -28,11 +30,11 @@ The product display name is **VST Bridge**. `VSTHub.exe`, `driver=vst`, the cont
 
 1. Install NI-RFSA, NI-RIO/FPGA support, NI Streaming for VST bitfile and radioconda with GNU Radio / GQRX / SoapySDR 0.8, all x64.
 2. Start `dist/VSTHub/VSTHub.exe` in the source tree, or `VSTHub.exe` in the extracted release package. The Bridge initializes the shared device session, starts RX and verifies its embedded Soapy plugin.
-3. Set center, sample rate and reference level on **RX Configuration**, then **Apply RX Settings**.
-4. Choose **Launch GQRX** or **Launch GNU Radio**. GQRX device string: `soapy=0,driver=vst,resource=RIO0`. Soapy/GNU Radio device arguments: `driver=vst,resource=RIO0`.
+3. Set center, sample rate and reference level on **RX Configuration**, then **Apply RX**.
+4. On **Bridge**, choose **Launch GQRX** or **Launch GNU Radio**. GQRX device string: `soapy=0,driver=vst,resource=RIO0`. Soapy/GNU Radio device arguments: `driver=vst,resource=RIO0`.
 5. Match the application's input rate to the Bridge rate. Enable GQRX DSP, or run a GNU Radio flowgraph.
 6. For file TX, select `waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.tdms` on **TX Configuration**, set center/peak, explicitly enable RF and click **Start TX**. RX may remain running or be stopped.
-7. Stop each direction independently. **Stop TX / RF Off** stops file or live TX; close the producer flowgraph before restarting live TX.
+7. Stop each direction independently. **Stop TX** stops file or live TX; close the producer flowgraph before restarting live TX.
 
 GQRX and GNU Radio may both be open. Only one can receive IQ; a TX-only GNU Radio flowgraph can coexist with GQRX RX. Stop TX before changing the shared IQ clock or resizing device buffers.
 
@@ -50,7 +52,7 @@ GNU Radio → C++ Soapy writeStream → TX shared memory ┐
 TDMS / CS16 → validate and preload IQ ───────────────┴→ bounded queue → TX DMA → RF OUT
 ```
 
-There is one RFSA/RFSG/FPGA session owner. File parsing happens before RF starts; steady playback uses preallocated memory and bounded queues. Backpressure never overwrites TX samples. Underflow faults stop TX and require explicit restart. [Implementation details](docs/ARCHITECTURE.md).
+There is one RFSA/RFSG/FPGA session owner. File parsing happens before RF starts; steady playback uses preallocated memory and bounded queues. Backpressure never overwrites TX samples. A missing TX client transitions to **No client data** with RF off. Hardware faults remain errors and require explicit restart. TX queue/FIFO sizes are editable; Apply TX saves their defaults for the next live client start. [Implementation details](docs/ARCHITECTURE.md).
 
 ## Project layout
 
@@ -78,16 +80,19 @@ There is one RFSA/RFSG/FPGA session owner. File parsing happens before RF starts
 
 Build requires .NET 10 SDK, MSVC x64, CMake/Ninja, NI headers/import libraries and radioconda. The published application needs NI drivers and the client software, but no separately installed .NET runtime or Python bridge. Tests and waveform generation use radioconda Python with NumPy/SciPy/npTDMS.
 
-The current evidence and exact acceptance status are recorded in [docs/VALIDATION.md](docs/VALIDATION.md). A golden designation requires a complete 1,200-second GUI duplex run, full-rate delivery, zero underflow/drop/overflow/recovery and inspected spectrum evidence. Historical short tests are retained separately and do not stand in for this gate.
+The current evidence and exact acceptance status are recorded in [docs/VALIDATION.md](docs/VALIDATION.md). The GRC golden run completed 1,200 seconds with full-rate delivery, zero stream errors and inspected spectrum evidence. TDMS/GQRX is separately marked USER_ACCEPTED at the operator's requested approximately 17-minute interval. Historical experiments and automatic failures remain preserved.
 
-| Test | Duration (s) | RX DMA (MS/s) | RX client (MS/s) | TX (MS/s) | Result |
-|---|---:|---:|---:|---:|---|
-| GNU Radio duplex | 1200.718 | 120.039935 | 120.039062 | 119.991869 | PASS |
-| TDMS playback + GQRX | 1200.000 | 120.013018 | 120.013018 | 120.012980 | PASS |
+| Test | Duration / s | RX delivered / MS/s | TX processed / MS/s | Result |
+|---|---:|---:|---:|---|
+| GNU Radio normal main() | 1200.485 | 120.001120 | 120.001129 | PASS |
+| TDMS + GQRX | 1026.875 | 120.001127 | 120.001130 | USER_ACCEPTED (~17 min) |
 
-Both golden runs are complete; the GQRX RF verdict includes the documented narrow-interferer review.
+GNU Radio uses its ordinary generated-script main(), with zero stream errors in the full 20-minute run. TDMS/GQRX is accepted by the operator at approximately 17 minutes; the original interrupted automatic FAIL and spectrum-gate limitation are preserved. Actual application spectrum/waterfall images, hardware counters and precise limitations are in [VALIDATION.md](docs/VALIDATION.md).
 
-![Golden four-carrier GQRX spectrum](docs/images/golden-gqrx-four-carrier.png)
+The final footer/theme rebuild changes UI only, keeps the tested native plugin and streaming core, and passes 36 self-tests, 12 actual UI renders and a fresh short real-hardware independent-direction regression. Long-run and final-UI executable hashes are recorded separately.
+
+![Actual final TX configuration and permanent footer](docs/images/bridge-tx-config-2.2.png)
+![Accepted GQRX four-carrier spectrum](docs/images/golden-gqrx-four-carrier-2.2.png)
 
 ## Runtime files
 

@@ -1,0 +1,66 @@
+{
+  "status": "USER_ACCEPTED",
+  "seconds": 1026.875,
+  "interruption_observed_seconds": 1027.875,
+  "rows": 1015,
+  "rates": {
+    "rx_dma_msps": 120.00112735949324,
+    "rx_delivered_msps": 120.00112735949324,
+    "tx_processed_msps": 120.00113044410372
+  },
+  "checks": {
+    "rates": true,
+    "continuous_streaming_rf_on": true,
+    "no_rx_drop": true,
+    "no_display_skip": true,
+    "no_hardware_or_logger_errors": true,
+    "initial_four_band_spectrum": false
+  },
+  "tested_binary_sha256": {
+    "VSTHub.exe": "402e38d4fef5139e6a1ff1dd14cc0d91738c1c7db869f265ad6ee5f50fca4cb1",
+    "vstSupport.dll": "c89fc3a7f3bdf65251772daf0d12bd888c537ffc04d87d7eadd3d396ccdef16c"
+  },
+  "acceptance": {
+    "user_authorized": true,
+    "requested_seconds": 1200,
+    "accepted_observed_minutes": 17,
+    "user_statement": "TDMS/GQRX 验收 完成吧，之前17分钟测试足够了。",
+    "reason": "Operator accepts the approximately 17-minute continuous interval and cancels a repeat."
+  },
+  "spectral_review": {
+    "method": "Initial saved RF ON versus pre-run RF OFF; central 16 MHz median >10 dB and >=95% bins >10 dB",
+    "bands": {
+      "-30000000.0": {
+        "median_on_off_db": 14.628032329414097,
+        "fraction_bins_above_10db": 0.6514181152790485,
+        "pass": false
+      },
+      "-10000000.0": {
+        "median_on_off_db": 25.816478214343604,
+        "fraction_bins_above_10db": 1.0,
+        "pass": true
+      },
+      "10000000.0": {
+        "median_on_off_db": 29.930632230755926,
+        "fraction_bins_above_10db": 0.9972527472527473,
+        "pass": true
+      },
+      "30000000.0": {
+        "median_on_off_db": 29.579989735563927,
+        "fraction_bins_above_10db": 0.9789569990850869,
+        "pass": true
+      }
+    },
+    "pass": false
+  },
+  "original_result": "../gqrx-tdms-2.2-interrupted/result.json",
+  "raw_monitor": "../gqrx-tdms-2.2-interrupted/monitor.jsonl",
+  "near_end_capture": "../gqrx-tdms-2.2-interrupted/gqrx-render-0033.png",
+  "limitations": [
+    "Original 1200-second automatic test is still FAIL and preserved.",
+    "Initial spectrum strict coverage gate fails for the -30 MHz carrier (about 65% bins exceed 10 dB); all four band medians exceed 10 dB and real GQRX frames show four occupied bands. User acceptance is not an automatic spectrum PASS.",
+    "End IQ probe was taken after an external TX stop and is invalid for TDMS verification.",
+    "Accepted interval ends at the last RF-on streaming observation before external interruption.",
+    "UI-only final rebuild is validated separately; long-run measurements belong to the earlier executable hash."
+  ]
+}

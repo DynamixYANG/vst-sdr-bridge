@@ -43,7 +43,8 @@ internal sealed unsafe class TxEngine : IDisposable
         SharedTxRing? live = null;
         using var sourceStop = CancellationTokenSource.CreateLinkedTokenSource(token);
         Exception? producerError = null;
-        var timer = Stopwatch.StartNew(); string error = ""; string state = "CONFIGURING";
+        var timer = Stopwatch.StartNew(); string error = ""; string state = "CONFIGURING"; bool clientIdle=false;
+        bool ClientNotSending() => live != null && (!live.TryReadProducerHeartbeat(out _, out var age, out _) || age > 500);
         ulong submitted = 0, processed = 0, previousSubmitted = 0, previousProduced = 0, previousProcessed = 0;
         uint lastRaw = 0; double lastMetric = 0, maxWrite = 0; string hash = "";
         void Update(bool measure = false)
@@ -80,9 +81,11 @@ internal sealed unsafe class TxEngine : IDisposable
 
         try
         {
+            log.Event("INFO","tx.initializing",new {stage="Allocating bounded source queue",c.QueueMiB,c.Source});
             queue = new TxSampleQueue(c.QueueMiB);
             if (c.IsLiveRing)
             {
+                log.Event("INFO","tx.initializing",new {stage="Opening live IQ shared memory and waiting for client",c.RingName,c.RingMiB});
                 live = new SharedTxRing(c.RingName, c.RingMiB, create: true);
                 state = "PREFILLING"; Update();
                 // Wait briefly for a live producer to appear and push prefill.
@@ -99,6 +102,7 @@ internal sealed unsafe class TxEngine : IDisposable
                 {
                     try
                     {
+                        using var idleWait = new HighResolutionWait();
                         var scratch = (nint)NativeMemory.AlignedAlloc((nuint)TxSampleQueue.BlockSamples * 4, 64);
                         try
                         {
@@ -117,7 +121,7 @@ internal sealed unsafe class TxEngine : IDisposable
                                     {
                                         if (blockDeadline.ElapsedMilliseconds > starveMs)
                                             throw new TimeoutException($"TX live_ring starved for {starveMs} ms while filling a DMA block.");
-                                        Thread.Sleep(1);
+                                        idleWait.Wait();
                                         continue;
                                     }
                                     got += n;
@@ -136,6 +140,7 @@ internal sealed unsafe class TxEngine : IDisposable
             }
             else
             {
+                log.Event("INFO","tx.initializing",new {stage="Validating and loading waveform",c.WaveformPath,c.RateHz});
                 byte[] waveform = WaveformFile.Load(c.WaveformPath, c.RateHz, out hash);
                 producer = new Thread(() =>
                 {
@@ -162,24 +167,42 @@ internal sealed unsafe class TxEngine : IDisposable
             }
 
             producer.Start();
+            log.Event("INFO","tx.initializing",new {stage="Configuring TX DMA FIFO and RFSG",c.FifoMiB,c.CenterHz,c.RateHz,c.PeakDbm});
             hardware = new NiTxHardware(device, c.FifoMiB);
             hardware.Configure(c.CenterHz, c.RateHz, c.PeakDbm);
             state = "PREFILLING"; Update();
-            void Transfer()
+            void Transfer(int timeoutMs=500)
             {
-                if (Volatile.Read(ref producerError) is { } failure) throw new InvalidOperationException("TX producer failed", failure);
-                nint data = queue.AcquireRead(token); long start = Stopwatch.GetTimestamp();
+                if (Volatile.Read(ref producerError) is { } failure) throw failure;
+                nint data = queue.AcquireRead(token, timeoutMs); long start = Stopwatch.GetTimestamp();
                 hardware.Write(data, TxSampleQueue.BlockSamples);
                 maxWrite = Math.Max(maxWrite, Stopwatch.GetElapsedTime(start).TotalMilliseconds);
                 queue.Release(); submitted += TxSampleQueue.BlockSamples;
             }
-            for (int i = 0; i < c.PrefillBlocks; i++) { token.ThrowIfCancellationRequested(); Transfer(); }
+            // GNU Radio activates sinks before scheduling their first work() call.
+            // Startup is not an on-air starvation: allow one bounded 15 s prefill window.
+            var prefillDeadline = Stopwatch.StartNew();
+            int prefillBlocks = c.IsLiveRing ? Math.Max(c.PrefillBlocks, Math.Min(48, c.FifoMiB / 4 - 1)) : c.PrefillBlocks;
+            for (int i = 0; i < prefillBlocks; i++)
+            {
+                token.ThrowIfCancellationRequested();
+                int remaining = 15000 - (int)prefillDeadline.ElapsedMilliseconds;
+                if (remaining <= 0) throw new TimeoutException("TX startup prefill did not complete within 15 s.");
+                Transfer(remaining);
+            }
             token.ThrowIfCancellationRequested();
+            log.Event("INFO","tx.prefill_complete",new {blocks=prefillBlocks,submitted_samples=submitted});
             hardware.Initiate(c.RfEnabled);
             lastRaw = 0; state = "STREAMING"; Update(true);
             log.Event("INFO", "tx.started", new { configuration = c, sha256 = hash, readback = Snapshot });
             while (!token.IsCancellationRequested)
             {
+                if(c.IsLiveRing && ClientNotSending())
+                {
+                    clientIdle=true;
+                    log.Event("INFO","tx.client_idle","Client is not sending IQ; RF output disabled");
+                    break;
+                }
                 Transfer();
                 if (timer.Elapsed.TotalSeconds - lastMetric >= .5)
                 {
@@ -192,6 +215,12 @@ internal sealed unsafe class TxEngine : IDisposable
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception ex) when (c.IsLiveRing && ClientNotSending() &&
+            (ex is TimeoutException || ex.Message.StartsWith("FPGA TX underflow") || ex.Message.StartsWith("TX FPGA left")))
+        {
+            clientIdle=true;
+            log.Event("INFO","tx.client_idle",new {message="Client is not sending IQ; RF output disabled",cause=ex.Message});
+        }
         catch (Exception ex) { error = ex.Message; log.Event("ERROR", "tx.failed", ex.ToString()); }
         finally
         {
@@ -207,7 +236,7 @@ internal sealed unsafe class TxEngine : IDisposable
             try { live?.Dispose(); } catch { }
             Volatile.Write(ref snapshot, Snapshot with
             {
-                Status = error.Length == 0 ? "STOPPED" : "FAULT",
+                Status = error.Length != 0 ? "FAULT" : clientIdle ? "WAITING_CLIENT" : "STOPPED",
                 Error = error,
                 RfEnabled = false,
                 SourceMsps = 0, DmaMsps = 0, ProcessedMsps = 0,
@@ -217,6 +246,14 @@ internal sealed unsafe class TxEngine : IDisposable
         }
     }
 
-    public void Stop() { stop?.Cancel(); worker?.Join(); }
+    public void Stop(bool clientStopped=false)
+    {
+        stop?.Cancel(); worker?.Join();
+        if(clientStopped && Snapshot.Status != "FAULT")
+        {
+            Volatile.Write(ref snapshot,Snapshot with {Status="WAITING_CLIENT",Error="",RfEnabled=false});
+            log.Event("INFO","tx.client_idle","Client stopped sending IQ; RF output disabled");
+        }
+    }
     public void Dispose() { Stop(); stop?.Dispose(); }
 }

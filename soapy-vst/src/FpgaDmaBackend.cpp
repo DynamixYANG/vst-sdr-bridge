@@ -3,6 +3,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#include "HighResolutionWait.hpp"
 #include <cstring>
 #include <stdexcept>
 #include <vector>
@@ -397,7 +398,7 @@ private:
       if (_configuring || !_hdr->active || GetTickCount64() - _hdr->heartbeat_ms > 2000) {
         ReleaseMutex(unlock.h); unlock.h = nullptr;
         if (GetTickCount() - t0 >= timeoutMs) return SOAPY_SDR_TIMEOUT;
-        Sleep(1); continue;
+        waitOneMillisecond(); continue;
       }
       const uint64_t w = _hdr->write_idx;
       uint64_t r = _hdr->read_idx;
@@ -471,7 +472,7 @@ private:
       if (GetTickCount() - t0 >= timeoutMs) return SOAPY_SDR_TIMEOUT;
       ReleaseMutex(unlock.h); unlock.h = nullptr;
       // Yield ~1ms instead of Sleep(0) spin; keeps Qt UI responsive under LabVIEW+TDMS load.
-      Sleep(1);
+      waitOneMillisecond();
     }
   }
 
@@ -512,7 +513,7 @@ private:
       ReleaseMutex(_shmMutex);
       if (!ready) {
         if (GetTickCount64()>=deadline) return SOAPY_SDR_TIMEOUT;
-        Sleep(1);
+        waitOneMillisecond();
       }
     }
     return SOAPY_SDR_TIMEOUT;

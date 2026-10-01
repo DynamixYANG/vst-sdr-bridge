@@ -1,0 +1,25 @@
+Created random file C:/Users/yang/AppData/Local/Temp/gqrx.CDaSmf
+gr-osmosdr 0.2.0.0 (0.2.0) gnuradio 3.10.12.0
+built-in source types: file rtl rtl_tcp uhd miri hackrf bladerf airspy airspyhf soapy redpitaya 
+rx_nb_cc :info: set_min_output_buffer on block 12 to 32768
+Resampling audio 96000 -> 48000
+audio_portaudio_sink :info: Output (HD Audio HDMI out) is the chosen device using Windows WDM-KS as the host
+BandPlanFile is C:/Users/yang/.config/gqrx/bandplan.csv
+BookmarksFile is C:/Users/yang/.config/gqrx/bookmarks.csv
+[INFO] [UHD] Win32; Microsoft Visual C++ version 14.2; Boost_108600; UHD_4.8.0.0-release
+[1m[33m[WARNING] SoapyVOLKConverters: no VOLK config file found. Run volk_profile for best performance.[0m
+[1m[33m[WARNING] Unable to scan local: -19
+[0m
+libusb: info [get_guid] no DeviceInterfaceGUID registered for 'USB\VID_046D&PID_C534&MI_01\6&2F7D3B5D&0&0001'
+libusb: info [get_guid] no DeviceInterfaceGUID registered for 'USB\VID_046D&PID_C534\5&13ABABB0&0&11'
+libusb: info [get_guid] no DeviceInterfaceGUID registered for 'USB\VID_8087&PID_0036\5&13ABABB0&0&3'
+libusb: info [get_guid] no DeviceInterfaceGUID registered for 'USB\VID_046D&PID_C534&MI_00\6&2F7D3B5D&0&0000'
+libusb: info [get_guid] no DeviceInterfaceGUID registered for 'USB\ROOT_HUB30\4&2D7CCC85&0&0'
+[1m[33m[WARNING] Unable to scan ip: -19
+[0m
+gr-osmosdr 0.2.0.0 (0.2.0) gnuradio 3.10.12.0
+built-in source types: file rtl rtl_tcp uhd miri hackrf bladerf airspy airspyhf soapy redpitaya 
+[INFO] vst dma: SHM Local\vst_live_v2 cap=268435456
+[INFO] vst: resource=RIO0 backend=dma tx_ring=Local\vst_tx_v1
+audio_portaudio_sink :info: Output (HD Audio HDMI out) is the chosen device using Windows WDM-KS as the host
+[1m[31m[ERROR] Analog bandwidth is fixed; use 0 (auto) or the actual bandwidth. Use a GNU Radio FIR for digital filtering.[0m

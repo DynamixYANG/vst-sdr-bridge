@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "release_binary_sha256": {
+    "VSTHub.exe": "fce70c82c1ad1df5c3abce0b867faf6c99548e88a5e9af97ecf3555eea8b1f4d",
+    "vstSupport.dll": "c89fc3a7f3bdf65251772daf0d12bd888c537ffc04d87d7eadd3d396ccdef16c"
+  },
+  "long_run_tested_binary_sha256": {
+    "VSTHub.exe": "402e38d4fef5139e6a1ff1dd14cc0d91738c1c7db869f265ad6ee5f50fca4cb1",
+    "vstSupport.dll": "c89fc3a7f3bdf65251772daf0d12bd888c537ffc04d87d7eadd3d396ccdef16c"
+  },
+  "scope": "Final UI-only rebuild: permanent footer controls, dark editable dropdowns and compact action layout. Streaming core and native plugin unchanged from long-run acceptance; no new long-duration run claimed.",
+  "checks": {
+    "selftests": 36,
+    "actual_ui_renders": 12,
+    "independence_hardware": "PASS",
+    "tdms_gqrx": "USER_ACCEPTED ~17 minutes",
+    "grc_normal_main": "PASS 1200.485 seconds"
+  },
+  "spectral_limit": "Initial -30 MHz carrier has 65.14% rather than >=95% bins improved >10 dB; user acceptance, not automatic spectrum PASS."
+}

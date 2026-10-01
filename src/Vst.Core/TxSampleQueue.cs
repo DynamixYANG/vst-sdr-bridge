@@ -28,9 +28,9 @@ internal sealed unsafe class TxSampleQueue : IDisposable
         return data+(nint)(Interlocked.Read(ref produced)%slots*BlockSamples*4);
     }
     public void Publish() {Interlocked.Increment(ref produced);readable.Release();}
-    public nint AcquireRead(CancellationToken token)
+    public nint AcquireRead(CancellationToken token, int timeoutMs=500)
     {
-        if(!readable.Wait(500,token)) throw new TimeoutException("TX source starved for 500 ms. TX latched off.");
+        if(!readable.Wait(timeoutMs,token)) throw new TimeoutException($"TX source starved for {timeoutMs} ms. TX latched off.");
         return data+(nint)(Interlocked.Read(ref consumed)%slots*BlockSamples*4);
     }
     public void Release() {Interlocked.Increment(ref consumed);writable.Release();}

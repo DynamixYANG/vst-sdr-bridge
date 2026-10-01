@@ -1,4 +1,4 @@
-param([string]$Repository='DynamixYANG/vst-sdr-bridge',[string]$Tag='v2.1.0')
+param([string]$Repository='DynamixYANG/vst-sdr-bridge',[string]$Tag='v2.2.0')
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
 $ghCommand=Get-Command gh -ErrorAction SilentlyContinue
@@ -16,10 +16,11 @@ try {
  $tagCommit=git rev-list -n 1 $Tag
  $headCommit=git rev-parse HEAD
  if($tagCommit -ne $headCommit){throw 'Release tag must point to the current tested source commit.'}
- $out=Join-Path $root 'docs\releases\2.1'
- foreach($test in @('grc-120-20min','gqrx-tdms-120-20min','independence')){
-  if((Get-Content -Raw (Join-Path $root "tests\artifacts\$test\result.json")|ConvertFrom-Json).status -ne 'PASS'){throw "Acceptance failed: $test"}
- }
+ $version=$Tag.TrimStart('v')
+ $series=($version.Split('.')[0..1] -join '.')
+ $out=Join-Path $root ('docs\releases\'+$series)
+ . (Join-Path $PSScriptRoot 'Test-ReleaseAcceptance.ps1')
+ Test-ReleaseAcceptance $root
  foreach($line in Get-Content (Join-Path $out 'SHA256SUMS.txt')){
   if($line -match '^([0-9a-f]{64})  (.+)$'){
    if((Get-FileHash (Join-Path $out $matches[2]) -Algorithm SHA256).Hash.ToLower() -ne $matches[1]){throw 'Release checksum mismatch.'}
@@ -37,7 +38,7 @@ try {
  & git push origin $Tag
  if($LASTEXITCODE){throw 'Tag push failed.'}
  $assets=@(Get-ChildItem $out -Filter *.zip | ForEach-Object FullName)+(Join-Path $out 'SHA256SUMS.txt')
- & $gh release create $Tag @assets --repo $Repository --verify-tag --title 'VST Bridge 2.1.0 — GNU Radio / GQRX middleware' --notes-file (Join-Path $out 'RELEASE-NOTES.md')
+ & $gh release create $Tag @assets --repo $Repository --verify-tag --title "VST Bridge $version - GNU Radio / GQRX middleware" --notes-file (Join-Path $out 'RELEASE-NOTES.md')
  if($LASTEXITCODE){throw 'Release creation failed. Existing releases are not modified automatically.'}
  & $gh release view $Tag --repo $Repository --json url,tagName,assets
  if($LASTEXITCODE){throw 'Release verification failed.'}
