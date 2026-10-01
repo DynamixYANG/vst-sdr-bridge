@@ -11,3 +11,11 @@ Validation: 39 self-checks, seven real cold-start/direction checks, eight native
 The earlier 2.2.0 GRC 20-minute PASS and operator-accepted TDMS/GQRX ~17-minute evidence remain preserved; they are not relabeled as long-run tests of this patch. No TDMS/GQRX repeat was performed.
 
 Assets: Windows x64 application with embedded matching plugin/examples/TDMS/documents/evidence; standalone SoapySDR 0.8 plugin; tagged source archive; SHA256SUMS.txt. Install the matching patch plugin, or let the application install its embedded module while SDR clients are closed. Earlier release assets remain unchanged.
+
+## Licensing update
+
+Project-owned material is now licensed under GNU GPL v3 or later, with a limited NI driver linking permission. Hobby and commercial use are permitted under the GPL terms; binary distribution must include access to Corresponding Source. Third-party GPL/MIT/Boost and bundled .NET notices remain applicable.
+
+Download `VST-Bridge-2.2.1-licenses.zip` alongside the existing application, plugin or source archive. It supplies LICENSE, NOTICE, LICENSE-EXCEPTIONS.md, third-party license texts and a scope guide. Corresponding Source: `VST-Bridge-2.2.1-source.zip` / the v2.2.1 source tag. Original assets and tags retain their tested identities. Future packages include these notices directly. See [license](https://github.com/DynamixYANG/vst-sdr-bridge/blob/main/LICENSE) and [scope](https://github.com/DynamixYANG/vst-sdr-bridge/blob/main/docs/LICENSING.md).
+
+License supplement SHA-256: `ce54614ad7e540b347c2505e4393a344973294bc27a9dcfd56a5575feaceb8d8`.

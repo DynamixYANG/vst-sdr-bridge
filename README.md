@@ -14,6 +14,10 @@ Version **2.2.1** keeps RX/TX Start/Stop permanently visible in the window foote
 
 Patch 2.2.1 separates device initialization from RX acquisition, removes unfocused blue selection from editable configuration fields, and keeps disabled fields dark. See [patch validation](docs/VALIDATION-2.2.1.md).
 
+## License
+
+Project-owned Hub, plugin and supporting code use [GNU GPL v3 or later](LICENSE) (`GPL-3.0-or-later`). Hobby and commercial use are permitted; conveying binaries or modifications requires compliance with GPL terms, including Corresponding Source. A [limited NI driver linking permission](LICENSE-EXCEPTIONS.md) supports the required proprietary hardware libraries. Existing third-party licenses remain applicable. See [licensing scope](docs/LICENSING.md), [NOTICE](NOTICE) and [third-party notices](THIRD-PARTY-NOTICES.md).
+
 ## Features
 
 | Function | Implementation |

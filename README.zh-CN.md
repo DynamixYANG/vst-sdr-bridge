@@ -10,6 +10,10 @@
 
 2.2.1 修复打开程序即自动开始 RX 的行为；配置页未聚焦下拉框不再全选蓝色，禁用项也保持深色白字。详见[补丁验证](docs/VALIDATION-2.2.1.md)。
 
+## 许可证
+
+项目自有 Hub、插件和配套代码采用 [GPL v3 或更新版本](LICENSE)（`GPL-3.0-or-later`），允许个人爱好和商业使用。分发二进制或修改版时须遵守 GPL，包括提供对应源码。另附[范围有限的 NI 驱动链接许可](LICENSE-EXCEPTIONS.md)，第三方组件保留原许可。详见[许可范围](docs/LICENSING.md)、[NOTICE](NOTICE) 和[第三方声明](THIRD-PARTY-NOTICES.md)。
+
 ## 功能
 
 | 模块 | 能力 |

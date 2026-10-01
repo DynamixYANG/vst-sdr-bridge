@@ -1,0 +1,19 @@
+VST Bridge
+Copyright 2026 DynamixYANG and VST Bridge contributors.
+
+Project-owned material is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+The program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See LICENSE for the complete terms.
+
+The limited additional NI driver linking permission is in
+LICENSE-EXCEPTIONS.md. Other third-party rights and notices remain
+applicable; see THIRD-PARTY-NOTICES.md and LICENSES/.
+
+This project is not a National Instruments, GNU Radio or GQRX product.

@@ -25,6 +25,13 @@ New-Item -ItemType Directory -Force (Join-Path $stage 'VST-Bridge\docs') | Out-N
 Get-ChildItem (Join-Path $root 'docs') -Filter *.md -File | Copy-Item -Destination (Join-Path $stage 'VST-Bridge\docs')
 Copy-Item (Join-Path $root 'docs\images') (Join-Path $stage 'VST-Bridge\docs') -Recurse
 Copy-Item (Join-Path $root 'README.md'),(Join-Path $root 'README.zh-CN.md'),(Join-Path $root 'THIRD-PARTY-NOTICES.md') (Join-Path $stage 'VST-Bridge')
+foreach($package in @('VST-Bridge','SoapyVST')){
+ Copy-Item (Join-Path $root 'LICENSE'),(Join-Path $root 'NOTICE'),(Join-Path $root 'LICENSE-EXCEPTIONS.md'),(Join-Path $root 'THIRD-PARTY-NOTICES.md') (Join-Path $stage $package)
+ Copy-Item (Join-Path $root 'LICENSES') (Join-Path $stage $package) -Recurse
+ $fixtureNotice=Join-Path $stage "$package\waveforms\reference"
+ New-Item -ItemType Directory -Force $fixtureNotice | Out-Null
+ Copy-Item (Join-Path $root 'waveforms\reference\LICENSE.txt') $fixtureNotice
+}
 New-Item -ItemType Directory -Force (Join-Path $stage 'VST-Bridge\scripts') | Out-Null
 Copy-Item (Join-Path $root 'scripts\Launch-Example.ps1'),(Join-Path $root 'scripts\generate_nr_four_carrier.py'),(Join-Path $root 'scripts\README.md') (Join-Path $stage 'VST-Bridge\scripts')
 New-Item -ItemType Directory -Force (Join-Path $stage 'VST-Bridge\tests\artifacts') | Out-Null
