@@ -1,5 +1,7 @@
 # VST Bridge
 
+[下载 v2.2.0 Release](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.0)。仓库为 private，请使用有访问权限的 GitHub 账号登录。应用、独立 Soapy 插件、tag 源码及 SHA-256 校验文件均已发布。
+
 面向 **GNU Radio / GQRX 的 NI VST 中间件**。在一个 Windows 界面内完成设备配置、应用启动、TX/RX 控制、数据流监控、故障诊断和日志查看。当前硬件适配器支持 NI PXIe-5644R。
 
 界面名称更新为 VST Bridge，程序文件仍为 `VSTHub.exe`，保留 `driver=vst`、控制协议和共享内存端点，兼容原有工程。GQRX 用于接收；GNU Radio 可用于接收、发射及全双工。两者可同时打开，但只能有一个应用消费 RX IQ 数据；GNU Radio 仅发射流程可与 GQRX 接收并行。

@@ -14,7 +14,9 @@ Old wrapper-based 2.1 testing did not establish ordinary GRC startup repeatabili
 
 ## Publication
 
-Planned repository: DynamixYANG/vst-sdr-bridge, private; local release tag v2.2.0. Package/Publish scripts check the distinct automatic-PASS, user-accepted and final-UI records plus hashes. GitHub CLI is not authenticated; no remote repository or release is claimed. App/plugin/source packages and SHA256SUMS are prepared under docs/releases/2.2 and chat outputs. Run scripts/Publish-GitHub.ps1 after human GitHub CLI login.
+Published on 1 October 2026: [DynamixYANG/vst-sdr-bridge](https://github.com/DynamixYANG/vst-sdr-bridge), private; [v2.2.0 Release](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.0). The operator completed browser authorization. Remote main and the annotated tag target were verified against release commit 9bc096bd1e4a556ca44d92dc8b22ce3fcea4b69c; all four uploaded asset SHA-256 digests and sizes match local files.
+
+The published source archive records the pre-publication handoff. This documentation-only follow-up records completed publication on main; the release tag, tested executable/plugin and uploaded archives remain immutable. Details: releases/2.2/PUBLISHED.md. Package/Publish scripts distinguish automatic PASS, USER_ACCEPTED and final UI-build review.
 
 ## Organization
 

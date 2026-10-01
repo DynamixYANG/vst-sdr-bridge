@@ -2,6 +2,8 @@
 
 [简体中文](README.zh-CN.md)
 
+[Download VST Bridge v2.2.0](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.0) · Private repository; sign in with an authorized GitHub account. Application, standalone Soapy plugin, tagged source and SHA-256 checksums are published.
+
 **NI VST ↔ GNU Radio / GQRX middleware for Windows.**
 
 VST Bridge owns the NI RFSA/RFSG/FPGA session and connects the PXIe-5644R to open SDR applications through a native SoapySDR plugin. Configure the radio, launch either application, run RX or TX independently, monitor every transport stage, and inspect structured logs in one desktop console.
