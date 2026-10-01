@@ -1,0 +1,57 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9322eb7..ffee76f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -71,7 +71,7 @@ if(MSVC)
+     add_definitions(-DBOOST_ALL_DYN_LINK)
+ 
+     #export gr-rds symbols
+-    add_definitions(-Dgnuradio_RDS_EXPORTS)
++    add_definitions(-Dgnuradio_rds_EXPORTS)
+ 
+     if ("${MSVC_VERSION}" VERSION_LESS "1900")
+         add_definitions(-D__func__=__FUNCTION__)
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index cdb6956..93d8071 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -58,10 +58,11 @@ if (WIN32)
+     set(ICON_SOURCE ${CMAKE_SOURCE_DIR}/resources/icons/gqrx.ico)
+     set(RES_FILES "${CMAKE_CURRENT_BINARY_DIR}/gqrx.rc")
+     file(WRITE "${RES_FILES}" "id ICON \"${ICON_SOURCE}\"")
+-    set(CMAKE_RC_COMPILER_INIT windres)
+     enable_language(RC)
+-    set(CMAKE_RC_COMPILE_OBJECT
+-        "<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
++    if(NOT MSVC)
++        set(CMAKE_RC_COMPILE_OBJECT
++            "<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
++    endif()
+     list(APPEND RESOURCES_LIST ${RES_FILES})
+ endif(WIN32)
+ 
+diff --git a/src/applications/gqrx/main.cpp b/src/applications/gqrx/main.cpp
+index 9df8d15..83cfcbb 100644
+--- a/src/applications/gqrx/main.cpp
++++ b/src/applications/gqrx/main.cpp
+@@ -158,6 +158,20 @@ int main(int argc, char *argv[])
+         if (w.configOk)
+         {
+             w.show();
++            // Acceptance-only instrumentation: save this application's actual Qt-rendered
++            // spectrum/waterfall without desktop capture. RF and DSP code are unchanged.
++            const QString captureDir=qEnvironmentVariable("VST_GQRX_CAPTURE_DIR");
++            QTimer captureTimer;
++            int captureFrame=0;
++            if(!captureDir.isEmpty()) {
++                QDir().mkpath(captureDir);
++                w.resize(1400,900);
++                QObject::connect(&captureTimer,&QTimer::timeout,&w,[&]() {
++                    w.grab().save(captureDir+QString("/gqrx-render-%1.png").arg(captureFrame++,4,10,QChar('0')));
++                    if(QFile::exists(captureDir+"/close.request")) w.close();
++                });
++                captureTimer.start(30000);
++            }
+             return_code = QApplication::exec();
+         }
+         else

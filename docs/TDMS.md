@@ -1,0 +1,11 @@
+# TDMS playback and four-carrier NR stimulus
+
+Select `.tdms` directly in TX Configuration. `.tmds` is accepted as a filename spelling alias; its bytes must still be valid NI TDMS. Playback requires no Python, temporary conversion file or external player. The validated waveform is loaded into memory and repeats until Stop TX. The file/decoded replay limit is 512 MiB.
+
+Supported profile: TDMS 1.0/2.0, little endian, exactly two raw channels **I** and **Q** in one group, equal sample counts, Int16 or normalized Float32/Float64 samples. Both contiguous and interleaved raw layouts and multiple segments are supported. File/group/channel metadata must declare `rate_hz=120000000`, `sample_rate_hz=120000000` or `wf_increment=1/120000000`. Every supplied rate declaration must agree. Float samples outside [-1,1], non-finite values, mismatched counts, unsupported layouts and truncated data are rejected before RF starts. DAQmx scaler formats and big-endian TDMS are not supported. [NI format specification](https://www.ni.com/en/support/documentation/supplemental/07/tdms-file-format-internal-structure.html).
+
+`nr-tm3.1a-fdd-4x20mhz-120msps.tdms` contains four DL FDD NR-FR1-TM3.1a carriers with 256QAM test-model payload, 20 MHz channel bandwidth, 30 kHz SCS and 51 PRBs each. Their centers are −30, −10, +10 and +30 MHz relative to the RF center. Each active subcarrier span is 18.36 MHz; four nominal channels occupy 80 MHz. The outer active edges are approximately ±39.18 MHz.
+
+The generator uses the published 20 MHz TM3.1a reference resource grid from [python_5gtoolbox](https://github.com/hahaliu2001/python_5gtoolbox), performs an independent IFFT/FFT round trip, adds normal cyclic prefixes, resamples 30.72 → 120 MS/s using 125/32 polyphase conversion, and combines time/phase shifted carriers. The 10 ms repeat contains 1,200,000 IQ samples at 0.8 peak full scale. JSON records hashes, reference identity, PAPR and numerical checks. This is a repeatable reference-grid transport stimulus, not certified PN23, EVM or ACLR conformance.
+
+Run `scripts/generate_nr_four_carrier.py` with NumPy, SciPy and npTDMS. The pinned reference fixture and upstream MIT notice are supplied in `waveforms/reference/`; no NI NR personality license is needed. The older 100 MHz stimulus is historical and exceeds this adapter's nominal analog bandwidth.

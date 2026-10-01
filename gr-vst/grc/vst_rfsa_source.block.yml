@@ -1,0 +1,50 @@
+id: vst_rfsa_source
+label: VST RFSA Source
+category: '[VST]'
+flags: [python]
+
+parameters:
+-   id: resource
+    label: Resource
+    dtype: string
+    default: '"RIO0"'
+-   id: center_freq
+    label: Center Frequency
+    dtype: real
+    default: '1e9'
+-   id: samp_rate
+    label: Sample Rate
+    dtype: real
+    default: '10e6'
+-   id: reference_level
+    label: Reference Level (dBm)
+    dtype: real
+    default: '0'
+-   id: block_samples
+    label: Block Samples
+    dtype: int
+    default: '65536'
+-   id: use_streaming_bitfile
+    label: Use Streaming Bitfile
+    dtype: bool
+    default: 'False'
+
+outputs:
+-   domain: stream
+    dtype: complex
+
+templates:
+    imports: from vst import vst_rfsa_source
+    make: "vst_rfsa_source(\n    resource=${resource},\n    center_freq=${center_freq},\n    samp_rate=${samp_rate},\n    reference_level=${reference_level},\n    block_samples=${block_samples},\n    use_streaming_bitfile=${use_streaming_bitfile},\n)"
+    callbacks:
+    - set_center_freq(${center_freq})
+    - set_samp_rate(${samp_rate})
+    - set_reference_level(${reference_level})
+
+documentation: |
+    NI PXIe-5644R source via niRFSA FetchIQ Complex I16.
+    Sustained Fetch on SFF-PXI validated near 90 MS/s; 120 MS/s continuous
+    capture uses LabVIEW DMA/TDMS streaming bitfile path, not this block.
+    Put gr-vst/python on PYTHONPATH before launching GRC.
+
+file_format: 1

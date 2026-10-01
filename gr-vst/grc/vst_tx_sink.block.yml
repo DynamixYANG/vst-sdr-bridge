@@ -1,0 +1,79 @@
+id: vst_tx_sink
+label: VST TX Sink
+category: '[VST]'
+flags: [python]
+parameters:
+- id: samp_rate
+  label: Sample rate (S/s)
+  dtype: real
+  default: 120e6
+- id: center_freq
+  label: TX center (Hz)
+  dtype: real
+  default: 2.5e9
+- id: peak_dbm
+  label: Peak power (dBm)
+  dtype: real
+  default: -30
+- id: rf_enabled
+  label: RF output enable
+  dtype: enum
+  options: ['False', 'True']
+  option_labels: ['Off (safe)', 'On']
+  default: 'False'
+- id: digital_gain
+  label: Digital gain (FS)
+  dtype: real
+  default: '0.8'
+- id: hub_host
+  label: Hub host
+  dtype: string
+  default: '"127.0.0.1"'
+  category: Advanced
+- id: hub_port
+  label: Hub control port
+  dtype: int
+  default: '19788'
+  category: Advanced
+- id: ring_name
+  label: TX SHM ring
+  dtype: string
+  default: '"Local\\vst_tx_v1"'
+  category: Advanced
+- id: resource
+  label: Resource hint
+  dtype: string
+  default: '"RIO0"'
+  category: Advanced
+inputs:
+- domain: stream
+  dtype: complex
+outputs: []
+templates:
+  imports: from vst import vst_tx_sink
+  make: |
+    vst_tx_sink(
+        center_freq=${center_freq},
+        samp_rate=${samp_rate},
+        peak_dbm=${peak_dbm},
+        rf_enabled=${rf_enabled},
+        digital_gain=${digital_gain},
+        hub_host=${hub_host},
+        hub_port=${hub_port},
+        ring_name=${ring_name},
+        resource=${resource},
+        auto_start=True,
+    )
+  callbacks:
+  - set_samp_rate(${samp_rate})
+  - set_center_freq(${center_freq})
+  - set_peak_dbm(${peak_dbm})
+  - set_rf_enabled(${rf_enabled})
+  - set_digital_gain(${digital_gain})
+documentation: |-
+  Streams complex IQ to VST Hub over Local\vst_tx_v1 (live_ring).
+  Start VSTHub.exe first. TX settings are independent of RX.
+  Peak power is RFSG peak dBm (not RX reference level). RF defaults Off.
+  This Hub release supports 120 MS/s TX only. Leave RF Off unless a rated
+  path is connected; Stop / TXSTOP always forces RF off.
+file_format: 1

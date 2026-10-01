@@ -1,0 +1,411 @@
+options:
+  parameters:
+    author: MagicYang
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: 120 MS/s TX/RX antenna-coupled +1 MHz tone. RF enabled, peak -10
+      dBm, RX reference -20 dBm. Stop flowgraph to turn RF off.
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: vst_bridge_120_duplex
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: VST Bridge - 120 MS/s duplex
+    window_size: (1400,900)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 8
+    rotation: 0
+    state: enabled
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: 120e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 200
+    - 12.0
+    rotation: 0
+    state: enabled
+- name: vec_len
+  id: variable
+  parameters:
+    comment: Large TX writeStream chunks
+    value: '262144'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 312
+    - 12.0
+    rotation: 0
+    state: enabled
+- name: freq
+  id: variable
+  parameters:
+    comment: 'Shared LO: TX and RX both 2500 MHz so +1 MHz tone is inside RX +/-60
+      MHz'
+    value: 2.5e9
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 424
+    - 12.0
+    rotation: 0
+    state: enabled
+- name: tx_peak_dbm
+  id: variable
+  parameters:
+    comment: Antenna demo PeakDbm
+    value: '-10'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 536
+    - 12.0
+    rotation: 0
+    state: enabled
+- name: rx_ref_dbm
+  id: variable
+  parameters:
+    comment: ''
+    value: '-20'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 656
+    - 12.0
+    rotation: 0
+    state: enabled
+- name: tone_hz
+  id: variable
+  parameters:
+    comment: "Baseband offset +1 MHz (RF = 2501 MHz) \u2014 inside RX band"
+    value: 1e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 776
+    - 12.0
+    rotation: 0
+    state: enabled
+- name: analog_sig_source_x_0
+  id: blocks_vector_source_x
+  parameters:
+    type: complex
+    vector: '[0.5*complex(__import__(''math'').cos(2*__import__(''math'').pi*k/120),__import__(''math'').sin(2*__import__(''math'').pi*k/120))
+      for k in range(120)]*2184'
+    repeat: 'True'
+    vlen: '1'
+    tags: '[]'
+    minoutbuf: '1048576'
+    maxoutbuf: '0'
+    comment: Precomputed periodic 1 MHz tone avoids per-sample NCO cost at 120 MS/s.
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 48
+    - 120.0
+    rotation: 0
+    state: enabled
+- name: soapy_custom_sink_0
+  id: soapy_custom_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    antenna0: RF_OUT
+    antenna1: ''
+    bandwidth0: '0'
+    bandwidth1: '0'
+    center_freq0: freq
+    center_freq1: '0'
+    comment: TX same CF as RX; RF ON PeakDbm=-10 for antenna-visible tone. Stop FG
+      -> TXSTOP RF off.
+    dc_offset0: '0'
+    dc_offset1: '0'
+    dev_args: resource=RIO0,rf_enabled=true,peak_dbm=-10
+    driver: vst
+    freq_correction0: '0'
+    freq_correction1: '0'
+    gain0: tx_peak_dbm
+    gain1: '0'
+    iq_balance0: '0'
+    iq_balance1: '0'
+    nchan: '1'
+    samp_rate: samp_rate
+    settings0: '"rf_enabled=true"'
+    settings1: ''
+    stream_args: ''
+    tune_args0: ''
+    tune_args1: ''
+    type: fc32
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 760
+    - 120.0
+    rotation: 0
+    state: enabled
+- name: soapy_custom_source_0
+  id: soapy_custom_source
+  parameters:
+    affinity: ''
+    agc0: 'False'
+    agc1: 'False'
+    alias: ''
+    antenna0: RF_IN
+    antenna1: ''
+    bandwidth0: '0'
+    bandwidth1: '0'
+    center_freq0: freq
+    center_freq1: '0'
+    comment: RX same CF 2500 MHz; expect tone near +1 MHz if RF path couples
+    dc_offset0: '0'
+    dc_offset1: '0'
+    dc_removal0: 'False'
+    dc_removal1: 'True'
+    dev_args: resource=RIO0,backend=dma,transport=shm,display_stride=1,display_mode=snapshot,report_rate=true,max_out=65536
+    driver: vst
+    freq_correction0: '0'
+    freq_correction1: '0'
+    gain0: rx_ref_dbm
+    gain1: '0'
+    iq_balance0: '0'
+    iq_balance1: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    nchan: '1'
+    samp_rate: samp_rate
+    settings0: ''
+    settings1: ''
+    stream_args: ''
+    tune_args0: ''
+    tune_args1: ''
+    type: fc32
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 48
+    - 360.0
+    rotation: 0
+    state: enabled
+- name: qtgui_freq_sink_x_0
+  id: qtgui_freq_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    average: '0.2'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    fc: freq
+    fftsize: '4096'
+    freqhalf: 'True'
+    grid: 'True'
+    gui_hint: 0,0,1,1
+    label: Relative Gain
+    label1: ''
+    label10: ''''''
+    label2: ''''''
+    label3: ''''''
+    label4: ''''''
+    label5: ''''''
+    label6: ''''''
+    label7: ''''''
+    label8: ''''''
+    label9: ''''''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '"RX Spectrum CF=2500 MHz (tone @ +1 MHz)"'
+    nconnections: '1'
+    showports: 'False'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_tag: '""'
+    type: complex
+    units: '""'
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    wintype: window.WIN_BLACKMAN_hARRIS
+    ymin: '-140'
+    ymax: '10'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 400
+    - 320.0
+    rotation: 0
+    state: enabled
+- name: qtgui_waterfall_sink_x_0
+  id: qtgui_waterfall_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '0'
+    color10: '0'
+    color2: '0'
+    color3: '0'
+    color4: '0'
+    color5: '0'
+    color6: '0'
+    color7: '0'
+    color8: '0'
+    color9: '0'
+    comment: ''
+    fc: freq
+    fftsize: '4096'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: 1,0,1,1
+    int_max: '10'
+    int_min: '-140'
+    label1: ''
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '"RX Waterfall"'
+    nconnections: '1'
+    showports: 'False'
+    type: complex
+    update_time: '0.10'
+    wintype: window.WIN_BLACKMAN_hARRIS
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 400
+    - 520.0
+    rotation: 0
+    state: enabled
+- name: tx_scheduler
+  id: snippet
+  parameters:
+    section: main_after_init
+    priority: '0'
+    code: 'self.analog_sig_source_x_0.set_min_noutput_items(262144)
+
+      self.analog_sig_source_x_0.set_max_noutput_items(262144)
+
+      self.analog_sig_source_x_0.set_thread_priority(1)
+
+      self.soapy_custom_sink_0.set_min_noutput_items(262144)
+
+      self.soapy_custom_sink_0.set_max_noutput_items(262144)
+
+      self.soapy_custom_sink_0.set_thread_priority(1)'
+  states:
+    coordinate:
+    - 400
+    - 450
+    rotation: 0
+    state: enabled
+connections:
+- - soapy_custom_source_0
+  - '0'
+  - qtgui_freq_sink_x_0
+  - '0'
+- - soapy_custom_source_0
+  - '0'
+  - qtgui_waterfall_sink_x_0
+  - '0'
+- - analog_sig_source_x_0
+  - '0'
+  - soapy_custom_sink_0
+  - '0'
+metadata:
+  file_format: 1
+  grc_compatible: true

@@ -1,0 +1,19 @@
+# Local dependency caches and preserved history
+/archive/*
+!/archive/README.md
+/work/*
+!/work/README.md
+/tools/*
+!/tools/README.md
+**/bin/
+**/obj/
+**/__pycache__/
+*.pyc
+/soapy-vst/build*/
+/soapy-vst/nuget-pkgs/
+/dist/*
+!/dist/README.md
+/docs/releases/2.1/*.zip
+/docs/releases/2.1/SHA256SUMS.txt
+*.user
+.vs/

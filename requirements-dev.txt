@@ -1,0 +1,6 @@
+# Use inside the existing radioconda environment (GNU Radio/Soapy/Qt come from conda).
+numpy==2.2.3
+scipy==1.15.2
+npTDMS==1.11.0
+PyYAML==6.0.2
+matplotlib==3.10.1

@@ -1,0 +1,8 @@
+# grc-attempt3-scheduler-starve
+
+Test evidence. Consult result.json and docs/VALIDATION.md for status, duration and capture provenance. Original failed attempts are retained.
+
+- `grc-spectrum-0010s.png`
+- `grc-spectrum-final.png`
+- `monitor.jsonl`
+- `result.json`

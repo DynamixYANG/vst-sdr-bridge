@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>VSTHub</AssemblyName>
+    <Version>2.1.0</Version>
+    <Product>VST Bridge</Product>
+    <AssemblyTitle>VST Bridge</AssemblyTitle>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Vst.Core/Vst.Core.csproj" />
+    <EmbeddedResource Include="../../soapy-vst/build-vst/vstSupport.dll" LogicalName="vstSupport.dll" />
+  </ItemGroup>
+</Project>

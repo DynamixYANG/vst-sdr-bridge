@@ -1,0 +1,68 @@
+id: vst_live_source
+label: VST Live DMA Source
+category: '[VST]'
+flags: [python, throttle]
+parameters:
+- id: samp_rate
+  label: Sample rate (S/s)
+  dtype: real
+  default: 120e6
+- id: center_freq
+  label: RF center (Hz)
+  dtype: real
+  default: 1e9
+- id: reference_level_dbm
+  label: Reference level (dBm)
+  dtype: real
+  default: 0
+- id: preamp_mode
+  label: RF preamplifier
+  dtype: enum
+  options: ['"auto"']
+  option_labels: ['Automatic (5644R)']
+  default: '"auto"'
+- id: dev_args
+  label: Device arguments
+  dtype: string
+  default: 'resource=RIO0,backend=dma,transport=shm,display_stride=1,report_rate=true,max_out=65536'
+  category: Advanced
+inputs:
+- domain: message
+  id: cmd
+  optional: true
+outputs:
+- domain: stream
+  dtype: complex
+templates:
+  imports: |
+    import os
+    os.environ.setdefault('GR_CONF_DEFAULT_BUFFER_SIZE', '1048576')
+    from gnuradio import soapy
+  make: |
+    soapy.source('driver=vst', 'fc32', 1, ${dev_args}, '', [''], [''])
+    self.${id}.set_sample_rate(0, ${samp_rate})
+    self.${id}.set_frequency(0, ${center_freq})
+    self.${id}.set_antenna(0, 'RF_IN')
+    self.${id}.write_setting('reference_level_dbm', str(${reference_level_dbm}))
+    self.${id}.write_setting('preamp_mode', ${preamp_mode})
+  callbacks:
+  - set_sample_rate(0, ${samp_rate})
+  - set_frequency(0, ${center_freq})
+  - write_setting('reference_level_dbm', str(${reference_level_dbm}))
+  - write_setting('preamp_mode', ${preamp_mode})
+documentation: |-
+  Start ContinuousDmaProducer before this flowgraph. Only one IQ consumer is allowed.
+  Set GR_CONF_DEFAULT_BUFFER_SIZE=1048576 before launching GRC/Python; the environment
+  default above may be too late if GNU Radio has already been imported.
+  Reference level is expected maximum input power (dBm), not gain (dB).
+  Preamp Automatic is preserved across retunes; read_sensor('preamp_actual') returns
+  the driver state. 5644R rejects manual On and Off; use Reference level to control
+  the receiver frontend. preamp_present is the raw NI capability query and does
+  not override the actual state readback.
+  Other sensors: actual_center_hz, actual_rate_sps,
+  actual_reference_dbm, effective_bandwidth_hz, active, healthy, producer_state,
+  drops, overflow_count, recoveries, epoch, producer_heartbeat_ms, last_error.
+  Counters are cumulative. Healthy describes the current producer, not historical
+  losslessness. Analog bandwidth is read-only. IQ is normalized raw data, not dBm.
+  Changing frontend settings can cause a brief acquisition interruption.
+file_format: 1

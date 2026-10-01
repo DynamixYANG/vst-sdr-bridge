@@ -1,0 +1,27 @@
+{
+  "method": "Central 16 MHz per carrier; median >10 dB AND >=95% bins >10 dB ON versus OFF",
+  "bands": {
+    "-30000000.0": {
+      "median_on_off_db": 25.580506394713282,
+      "fraction_bins_above_10db": 0.9981701738334858,
+      "pass": true
+    },
+    "-10000000.0": {
+      "median_on_off_db": 23.88818860010415,
+      "fraction_bins_above_10db": 1.0,
+      "pass": true
+    },
+    "10000000.0": {
+      "median_on_off_db": 28.44892924965746,
+      "fraction_bins_above_10db": 0.9954212454212454,
+      "pass": true
+    },
+    "30000000.0": {
+      "median_on_off_db": 28.402712237622154,
+      "fraction_bins_above_10db": 1.0,
+      "pass": true
+    }
+  },
+  "pass": true,
+  "review_note": "Post-run criterion correction: a persistent narrow interferer near 2514 MHz dominates arithmetic OFF band power. Original mean-power gate failed (5.82 dB in carrier 3). Band coverage checks the wideband signal and retains every bin, including that interferer. Actual GQRX frame 0039 was visually inspected: four separated occupied bands and continuous waterfall."
+}

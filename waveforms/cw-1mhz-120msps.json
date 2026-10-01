@@ -1,0 +1,9 @@
+{
+  "format": "CS16_LE_IQ",
+  "rate_hz": 120000000,
+  "samples": 1200000,
+  "sha256": "38de1af3fe2dddc23bf0275f061378c996733fbd1c42906e90b7d2eec089f30a",
+  "model": "CW 1 MHz offset tone for antenna RF visibility",
+  "peak_full_scale": 0.9,
+  "offset_hz": 1000000.0
+}
