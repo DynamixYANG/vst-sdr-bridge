@@ -99,15 +99,23 @@ public sealed class HubEngine : IDisposable
             config=readback.Configuration; front=readback; lastTune=t.Elapsed.TotalSeconds; configCount++;
             state=EngineState.RUNNING; error=null; Telemetry();
         }
+        void InitializeDevice()
+        {
+            if(factory==null && device==null)
+            {
+                device=new NiDeviceSession(options,message=>Log.Event("INFO","device.initializing",message));
+                tx=new TxEngine(device,Log);
+            }
+        }
         void Open()
         {
             state=EngineState.INITIALIZING; error=null; Telemetry();
             if(factory!=null) hardware=factory(options);
             else
             {
-                if(device==null) {device=new NiDeviceSession(options,message=>Log.Event("INFO","device.initializing",message));tx=new TxEngine(device,Log);}
+                InitializeDevice();
                 Log.Event("INFO","rx.initializing",new {stage="Allocating RX DMA FIFO",options.FifoMiB,options.BlockSamples});
-                hardware=new NiRxHardware(options,device);
+                hardware=new NiRxHardware(options,device??throw new InvalidOperationException("Shared device initialization did not complete."));
             }
             Configure(config);
             Log.Event("INFO","rx.started",new{config,hardware.FifoCapacity});
@@ -120,7 +128,13 @@ public sealed class HubEngine : IDisposable
             server=new ControlServer(this,options.ControlPort); // reserve port before touching hardware
             Log.Event("INFO","rx.shared_memory",new {options.RingName,options.RingMiB});
             ring=new SharedIqRing(options.RingName,options.RingMiB);
-            try {Open();} catch(Exception ex) {state=EngineState.ERROR; error=ex.Message; hardware?.Dispose(); hardware=null; Log.Event("ERROR","rx.start_failed",error); Telemetry();}
+            try
+            {
+                InitializeDevice();ring.Pause();state=EngineState.STOPPED;
+                Log.Event("INFO","bridge.ready","Device and control endpoint ready. RX and TX remain stopped until explicitly started.");
+                Telemetry();
+            }
+            catch(Exception ex) {state=EngineState.ERROR; error=ex.Message; Log.Event("ERROR","device.initialize_failed",error); Telemetry();}
             while(!stop.IsCancellationRequested)
             {
                 if(requests.TryDequeue(out var request))
@@ -168,15 +182,28 @@ public sealed class HubEngine : IDisposable
                         else if(request.Line=="START")
                         {
                             // RX start/stop is independent of TX streaming on the shared session.
-                            if(hardware==null) {if(pendingRx!=null)config=pendingRx;Open();pendingRx=null;} reply="OK RX running";
+                            if(hardware==null)
+                            {
+                                var target=pendingRx??config;
+                                if(tx?.IsAlive==true && Math.Abs(target.RateHz-tx.RequestedRateHz)>1e-6)
+                                    throw new InvalidOperationException("Stop TX before changing RX sample rate (shared streaming bitfile).");
+                                config=target;Open();pendingRx=null;
+                            }
+                            reply="OK RX running";
                         }
                         else
                         {
                             var requested=ControlServer.ParseConfiguration(request.Line,pendingRx??config); requested.Validate();
-                            if(tx?.IsAlive==true && Math.Abs(requested.RateHz-config.RateHz)>1e-6) throw new InvalidOperationException("Stop TX before changing RX sample rate (shared streaming bitfile).");
+                            if(tx?.IsAlive==true && Math.Abs(requested.RateHz-(hardware==null?tx.RequestedRateHz:config.RateHz))>1e-6) throw new InvalidOperationException("Stop TX before changing RX sample rate (shared streaming bitfile).");
                             if(hardware==null)
                             {
-                                pendingRx=requested;reply="OK RX configuration saved for next START; hardware readback unchanged";
+                                pendingRx=requested;
+                                // Keep both configuration reply formats parseable by Soapy while idle.
+                                // These are staged values, not a claim of hardware readback.
+                                var epoch=ring.Snapshot().Epoch;
+                                reply=request.Line.StartsWith("CONFIG2 ")
+                                    ? $"OK center_hz={JsonDefaults.Number(requested.CenterHz)},rate_hz={JsonDefaults.Number(requested.RateHz)},reference_level_dbm={JsonDefaults.Number(requested.ReferenceDbm)},preamp_mode=auto,pending=1,epoch={epoch},request_id={requestId}"
+                                    : $"OK {JsonDefaults.Number(requested.CenterHz)} {JsonDefaults.Number(requested.RateHz)} {JsonDefaults.Number(requested.ReferenceDbm)} {epoch} pending=1";
                             }
                             else
                             {

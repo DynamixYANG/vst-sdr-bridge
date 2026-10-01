@@ -1,4 +1,4 @@
-param([string]$Repository='DynamixYANG/vst-sdr-bridge',[string]$Tag='v2.2.0')
+param([string]$Repository='DynamixYANG/vst-sdr-bridge',[string]$Tag='v2.2.1')
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
 $ghCommand=Get-Command gh -ErrorAction SilentlyContinue
@@ -18,9 +18,10 @@ try {
  if($tagCommit -ne $headCommit){throw 'Release tag must point to the current tested source commit.'}
  $version=$Tag.TrimStart('v')
  $series=($version.Split('.')[0..1] -join '.')
+ if($version -ne '2.2.0'){$series=$version}
  $out=Join-Path $root ('docs\releases\'+$series)
  . (Join-Path $PSScriptRoot 'Test-ReleaseAcceptance.ps1')
- Test-ReleaseAcceptance $root
+ Test-ReleaseAcceptance $root $version
  foreach($line in Get-Content (Join-Path $out 'SHA256SUMS.txt')){
   if($line -match '^([0-9a-f]{64})  (.+)$'){
    if((Get-FileHash (Join-Path $out $matches[2]) -Algorithm SHA256).Hash.ToLower() -ne $matches[1]){throw 'Release checksum mismatch.'}

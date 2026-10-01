@@ -1,12 +1,14 @@
 # VST Bridge
 
-[下载 v2.2.0 Release](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.0)。仓库为 private，请使用有访问权限的 GitHub 账号登录。应用、独立 Soapy 插件、tag 源码及 SHA-256 校验文件均已发布。
+[下载 v2.2.1 Release](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.1)。仓库为 private，请使用有访问权限的 GitHub 账号登录。应用、独立 Soapy 插件、tag 源码及 SHA-256 校验文件均已发布。
 
 面向 **GNU Radio / GQRX 的 NI VST 中间件**。在一个 Windows 界面内完成设备配置、应用启动、TX/RX 控制、数据流监控、故障诊断和日志查看。当前硬件适配器支持 NI PXIe-5644R。
 
 界面名称更新为 VST Bridge，程序文件仍为 `VSTHub.exe`，保留 `driver=vst`、控制协议和共享内存端点，兼容原有工程。GQRX 用于接收；GNU Radio 可用于接收、发射及全双工。两者可同时打开，但只能有一个应用消费 RX IQ 数据；GNU Radio 仅发射流程可与 GQRX 接收并行。
 
-**2.2.0 界面更新**：RX/TX 独立状态框位于右上角；TX/RX 的 Start/Stop 按钮固定在主窗口底栏，切换任何页面均可使用；RX/TX 数字设置使用统一深色底、白字的可编辑推荐下拉框（含展开列表和箭头）；TX queue、FIFO、预填充均可配置；选项帮助以鼠标悬浮显示。客户端停止发送 IQ 显示“ No client data ”并关闭 RF，不记为程序错误；硬件故障仍保留错误与计数。初始化阶段、插件检查和应用启动写入 Logs & Debug。
+**2.2.1 界面更新**：RX/TX 独立状态框位于右上角；TX/RX 的 Start/Stop 按钮固定在主窗口底栏，切换任何页面均可使用；RX/TX 数字设置使用统一深色底、白字的可编辑推荐下拉框（含展开列表和箭头）；TX queue、FIFO、预填充均可配置；选项帮助以鼠标悬浮显示。客户端停止发送 IQ 显示“ No client data ”并关闭 RF，不记为程序错误；硬件故障仍保留错误与计数。初始化阶段、插件检查和应用启动写入 Logs & Debug。
+
+2.2.1 修复打开程序即自动开始 RX 的行为；配置页未聚焦下拉框不再全选蓝色，禁用项也保持深色白字。详见[补丁验证](docs/VALIDATION-2.2.1.md)。
 
 ## 功能
 
@@ -27,7 +29,7 @@
 ## 使用流程
 
 1. 安装 NI-RFSA、NI-RIO/FPGA 支持及 NI Streaming for VST bitfile，准备 x64 radioconda、GNU Radio、GQRX 和 SoapySDR 0.8。
-2. 运行 `dist/VSTHub/VSTHub.exe`。程序持有唯一 NI 会话，初始化 RX，并核对内嵌插件。
+2. 运行 `dist/VSTHub/VSTHub.exe`。程序持有唯一 NI 会话，初始化设备并核对内嵌插件；RX、TX 默认保持停止。点击底栏 Start RX，或开启已连接 Soapy 客户端的 RX DSP，才开始采样。
 3. 在 **RX Configuration** 设置中心频率、采样率、参考电平，然后应用。停止时保存的 RX 配置会在下次 Start 生效。
 4. 在 **Bridge** 页面点击 **Launch GQRX** 或 **Launch GNU Radio**。GQRX 设备串为 `soapy=0,driver=vst,resource=RIO0`；GNU Radio 使用 `driver=vst,resource=RIO0`。客户端采样率须与 Hub 一致。
 5. 文件发射：在 **TX Configuration** 选择 TDMS/CS16，设置频率和峰值，按需要勾选 RF，然后点击固定底栏 **Start TX**。在 TX Monitor 检查实际速率、队列余量和欠载计数。
@@ -91,7 +93,7 @@ GRC 验收连续 1,200 秒；TDMS/GQRX 按用户最新要求接受此前约 17 �
 
 GRC 标准 main() 连续 20 分钟通过，作为 golden 范例。TDMS/GQRX 按用户明确指示，以此前约 17 分钟稳定运行及实际四载波频谱/瀑布图作为接受的参考例子。两段有效运行期间实际速率约 120.001 MS/s，欠载、活动丢样、显示跳样、溢出、恢复和日志错误为零。TDMS 原始自动结果仍保留 FAIL：外部启动 GNU Radio 中断 TX；初始频谱的 −30 MHz 载波未达到严格 95% 覆盖判据（65.142%），四路中位增益均超过 10 dB。详见 [VALIDATION.md](docs/VALIDATION.md)。
 
-本次最终界面编译只修改底栏/配色，不修改已验证的串流核心及原生插件。最终 EXE 通过 36 项自检、12 张正常/最小窗口实际渲染检查和新的真实硬件独立启停短测。长测 EXE 与最终 UI EXE 的哈希分开保存，不声称此后再次完成 20 分钟。交付时 RF 已关闭。
+当前 2.2.1 修改启动流程、原生客户端按需启动及配置框绘制，通过 39 项自检与真实硬件/原生客户端短测，详见[补丁验证](docs/VALIDATION-2.2.1.md)。之前长测仍对应原有 2.2 二进制，不称为新版 20 分钟验收。交付时 RF 已关闭。
 
-![最终 TX 配置与固定底栏](docs/images/bridge-tx-config-2.2.png)
+![最终 TX 配置与固定底栏](docs/images/bridge-tx-config-2.2.1.png)
 ![接受的 GQRX 四载波实测](docs/images/golden-gqrx-four-carrier-2.2.png)

@@ -1,5 +1,7 @@
 # VST Bridge 2.2 validation
 
+Current patch: [2.2.1 startup and configuration-field regression](VALIDATION-2.2.1.md). The long-duration results below remain scoped to their recorded 2.2 builds.
+
 Validated on 1 October 2026 (Europe/Helsinki), NI PXIe-5644R RIO0, Windows x64, Intel i7-6700, NI-RFSA/RFSG/FPGA Streaming for VST, radioconda GNU Radio 3.10.12.0, GQRX 2.17.6 and SoapySDR 0.8.1. The final UI rebuild embeds the same tested native module. Long runs were acquired before the final footer/theme change; binary identities are recorded separately.
 
 ## Ordinary GRC entrypoint: PASS

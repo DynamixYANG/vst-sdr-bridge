@@ -179,6 +179,12 @@ public:
       _hdr->read_idx = _hdr->write_idx;
       ReleaseMutex(_shmMutex);
       _discardCache = true;
+      // A Hub can initialize without acquiring. RX activation explicitly starts
+      // acquisition after claiming the consumer; merely configuring never does.
+      try {
+        const auto reply=controlExchange("START");
+        if(reply.rfind("OK ",0)!=0) throw std::runtime_error("RX start failed: "+reply);
+      } catch (...) { stop(); throw; }
     }
     if (_mode == Mode::Tcp) {
       ensureConnected();

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "tested_binary_sha256": {
+    "VSTHub.exe": "6b5a21ff376676317e6246003909973d382b823d792ff248febca6976d4bf392",
+    "vstSupport.dll": "63e2bae5fdeb8fc45cc117f70e97493889e4999b2430b5c16ad512278234c40a"
+  },
+  "configuration_pages_visually_inspected": [
+    "bridge-3",
+    "bridge-4",
+    "bridge-minimum-3",
+    "bridge-minimum-4"
+  ],
+  "render_count": 12,
+  "scope": "Actual WinForms renders and native edit selection evidence; four configuration-page renders visually inspected. No desktop-clicking claim."
+}

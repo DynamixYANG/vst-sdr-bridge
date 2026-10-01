@@ -84,6 +84,7 @@ internal sealed partial class MonitorForm : Form
                             var layoutEvidence=new {
                                 window=new {Width,Height},dpi=DeviceDpi,page=tabs.SelectedTab!.Text,
                                 rows=root.GetRowHeights(),
+                                choices=Descendants(this).OfType<NumberChoice>().Where(c=>c.Visible).Select(c=>new {c.Text,c.Enabled,focused=c.ContainsFocus,c.SelectionLength}).ToArray(),
                                 controls=root.Controls.Cast<Control>().Select(c=>new {kind=c.GetType().Name,c.Text,c.Left,c.Top,c.Width,c.Height,c.Visible}).ToArray()
                             };
                             File.WriteAllText(Path.Combine(Path.GetDirectoryName(renderCheck)!,Path.GetFileNameWithoutExtension(renderCheck)+suffix+".layout.json"),JsonDefaults.Serialize(layoutEvidence));
@@ -106,7 +107,7 @@ internal sealed partial class MonitorForm : Form
         var footer=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,ColumnCount=1,RowCount=2,Padding=new Padding(0,10,0,0)};
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        Button(start,"Start RX",async()=>{if(!engine.IsAlive)engine.Start();else await Send("START");});
+        Button(start,"Start RX",async()=>{if(!engine.IsAlive)RecreateEngine();await Send("START");});
         Button(halt,"Stop RX",async()=>await Send("STOP"));
         Button(txStart,"Start TX",async()=>{var config=TxDraft();config.Validate();if(await Send("TXSTART "+JsonDefaults.Serialize(config)))SaveTxDraft(config);});
         Button(txStop,"Stop TX",async()=>await Send("TXSTOP"));
@@ -121,6 +122,8 @@ internal sealed partial class MonitorForm : Form
         details.Dock=DockStyle.Fill;details.AutoSize=true;details.ForeColor=Muted;details.Font=new Font(Font.FontFamily,9);details.Padding=new Padding(0,6,0,0);
         footer.Controls.Add(details,0,1);root.Controls.Add(footer,0,3);
     }
+    private static IEnumerable<Control> Descendants(Control parent)
+    {foreach(Control child in parent.Controls){yield return child;foreach(var descendant in Descendants(child))yield return descendant;}}
     private TabPage Page(TabControl tabs,string text)
     {
         var page=new TabPage(text){BackColor=Background,ForeColor=Color.WhiteSmoke,Padding=new Padding(10)}; tabs.TabPages.Add(page); return page;
@@ -278,7 +281,7 @@ internal sealed partial class MonitorForm : Form
         bool hasNotice=notice.Length>0 && DateTime.UtcNow<noticeUntil;
         var message=hasNotice?notice:s.Error??(s.LogError.Length>0?"Log write failed: "+s.LogError:"");
         banner.Text=message;banner.Visible=message.Length>0;banner.ForeColor=Color.Salmon;
-        details.Text=$"v2.2 · Uptime {TimeSpan.FromSeconds(s.ElapsedS):hh\\:mm\\:ss}   ·   CPU {s.CpuCores:F2} cores   ·   Log drops {s.LogDropped}";
+        details.Text=$"v{Application.ProductVersion.Split('+')[0]} · Uptime {TimeSpan.FromSeconds(s.ElapsedS):hh\\:mm\\:ss}   ·   CPU {s.CpuCores:F2} cores   ·   Log drops {s.LogDropped}";
         start.Enabled=s.Status is EngineState.STOPPED or EngineState.ERROR;
         halt.Enabled=s.Status is EngineState.RUNNING; apply.Enabled=true;
         gqrx.Enabled=true; RefreshBridge(s);

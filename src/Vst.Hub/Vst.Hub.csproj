@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>VSTHub</AssemblyName>
-    <Version>2.2.0</Version>
+    <Version>2.2.1</Version>
     <Product>VST Bridge</Product>
     <AssemblyTitle>VST Bridge</AssemblyTitle>
     <PublishSingleFile>true</PublishSingleFile>

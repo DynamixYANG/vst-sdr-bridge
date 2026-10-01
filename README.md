@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-[Download VST Bridge v2.2.0](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.0) · Private repository; sign in with an authorized GitHub account. Application, standalone Soapy plugin, tagged source and SHA-256 checksums are published.
+[Download VST Bridge v2.2.1](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.1) · Private repository; sign in with an authorized GitHub account. Application, standalone Soapy plugin, tagged source and SHA-256 checksums are published.
 
 **NI VST ↔ GNU Radio / GQRX middleware for Windows.**
 
@@ -10,7 +10,9 @@ VST Bridge owns the NI RFSA/RFSG/FPGA session and connects the PXIe-5644R to ope
 
 The product display name is **VST Bridge**. `VSTHub.exe`, `driver=vst`, the control API and shared-memory names remain compatible with VST Hub 2.0. GQRX is an RX client; GNU Radio supports RX, TX and duplex workflows. Exactly one IQ RX consumer may attach at a time.
 
-Version **2.2.0** keeps RX/TX Start/Stop permanently visible in the window footer, applies dark backgrounds and white text to editable dropdowns and their lists, adds independent header status badges, replaces inline notes with hover help, fixes monitor spacing, and exposes initialization stages in Logs & Debug.
+Version **2.2.1** keeps RX/TX Start/Stop permanently visible in the window footer, applies dark backgrounds and white text to editable dropdowns and their lists, adds independent header status badges, replaces inline notes with hover help, fixes monitor spacing, and exposes initialization stages in Logs & Debug.
+
+Patch 2.2.1 separates device initialization from RX acquisition, removes unfocused blue selection from editable configuration fields, and keeps disabled fields dark. See [patch validation](docs/VALIDATION-2.2.1.md).
 
 ## Features
 
@@ -31,7 +33,7 @@ Version **2.2.0** keeps RX/TX Start/Stop permanently visible in the window foote
 ## Quick start
 
 1. Install NI-RFSA, NI-RIO/FPGA support, NI Streaming for VST bitfile and radioconda with GNU Radio / GQRX / SoapySDR 0.8, all x64.
-2. Start `dist/VSTHub/VSTHub.exe` in the source tree, or `VSTHub.exe` in the extracted release package. The Bridge initializes the shared device session, starts RX and verifies its embedded Soapy plugin.
+2. Start `dist/VSTHub/VSTHub.exe` in the source tree, or `VSTHub.exe` in the extracted release package. The Bridge initializes the shared device session and verifies its embedded Soapy plugin. RX and TX remain stopped. Click Start RX, or activate RX DSP in an attached Soapy client, to begin acquisition.
 3. Set center, sample rate and reference level on **RX Configuration**, then **Apply RX**.
 4. On **Bridge**, choose **Launch GQRX** or **Launch GNU Radio**. GQRX device string: `soapy=0,driver=vst,resource=RIO0`. Soapy/GNU Radio device arguments: `driver=vst,resource=RIO0`.
 5. Match the application's input rate to the Bridge rate. Enable GQRX DSP, or run a GNU Radio flowgraph.
@@ -91,9 +93,9 @@ The current evidence and exact acceptance status are recorded in [docs/VALIDATIO
 
 GNU Radio uses its ordinary generated-script main(), with zero stream errors in the full 20-minute run. TDMS/GQRX is accepted by the operator at approximately 17 minutes; the original interrupted automatic FAIL and spectrum-gate limitation are preserved. Actual application spectrum/waterfall images, hardware counters and precise limitations are in [VALIDATION.md](docs/VALIDATION.md).
 
-The final footer/theme rebuild changes UI only, keeps the tested native plugin and streaming core, and passes 36 self-tests, 12 actual UI renders and a fresh short real-hardware independent-direction regression. Long-run and final-UI executable hashes are recorded separately.
+The current 2.2.1 patch changes startup, native client activation and configuration-field rendering. It passes 39 self-checks and short real-device/native-client regressions; see [patch validation](docs/VALIDATION-2.2.1.md). Earlier long runs remain bound to their recorded 2.2 binaries.
 
-![Actual final TX configuration and permanent footer](docs/images/bridge-tx-config-2.2.png)
+![Actual final TX configuration and permanent footer](docs/images/bridge-tx-config-2.2.1.png)
 ![Accepted GQRX four-carrier spectrum](docs/images/golden-gqrx-four-carrier-2.2.png)
 
 ## Runtime files

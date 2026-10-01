@@ -9,11 +9,57 @@ internal class DarkChoice : ComboBox
     [StructLayout(LayoutKind.Sequential)] private struct ComboInfo
     {public int Size;public NativeRect Item,Button;public int ButtonState;public IntPtr Combo,Edit,List;}
     [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(IntPtr handle,ref ComboInfo info);
+    [DllImport("user32.dll",EntryPoint="GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr handle,int index);
+    [DllImport("user32.dll",EntryPoint="SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr handle,int index,IntPtr value);
+    [DllImport("user32.dll",EntryPoint="SendMessageW")] private static extern IntPtr SendMessage(IntPtr handle,uint message,IntPtr wParam,IntPtr lParam);
+    [DllImport("gdi32.dll")] private static extern uint SetTextColor(IntPtr dc,uint color);
+    [DllImport("gdi32.dll")] private static extern uint SetBkColor(IntPtr dc,uint color);
+    [DllImport("gdi32.dll")] private static extern IntPtr CreateSolidBrush(uint color);
+    [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr handle);
+    private IntPtr fieldBrush;
+    private static uint ColorRef(Color color)=>(uint)(color.R|(color.G<<8)|(color.B<<16));
     public DarkChoice()
     {
         BackColor=Color.FromArgb(23,34,49);ForeColor=Color.WhiteSmoke;
         FlatStyle=FlatStyle.Flat;DrawMode=DrawMode.OwnerDrawFixed;
     }
+    internal void ClearInactiveSelection()
+    {
+        if(IsHandleCreated&&DropDownStyle==ComboBoxStyle.DropDown&&!ContainsFocus&&!DroppedDown)
+        {
+            var info=new ComboInfo{Size=Marshal.SizeOf<ComboInfo>()};
+            if(GetComboBoxInfo(Handle,ref info)&&info.Edit!=IntPtr.Zero)
+            {
+                var selection=SendMessage(info.Edit,0x00B0,IntPtr.Zero,IntPtr.Zero).ToInt64();
+                if((selection&0xffff)!=Text.Length||((selection>>16)&0xffff)!=Text.Length)
+                    SendMessage(info.Edit,0x00B1,new IntPtr(Text.Length),new IntPtr(Text.Length));
+            }
+        }
+    }
+    private void ClearSelectionAfterNativeUpdate()
+    {if(IsHandleCreated&&!IsDisposed)BeginInvoke((Action)(()=>{if(!IsDisposed)ClearInactiveSelection();}));}
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        var info=new ComboInfo{Size=Marshal.SizeOf<ComboInfo>()};
+        if(DropDownStyle==ComboBoxStyle.DropDown&&GetComboBoxInfo(Handle,ref info)&&info.Edit!=IntPtr.Zero)
+        {
+            // Editable ComboBox children retain ES_NOHIDESEL by default.
+            // Remove it so an intentional edit selection only appears while focused.
+            var style=GetWindowLongPtr(info.Edit,-16).ToInt64();
+            SetWindowLongPtr(info.Edit,-16,new IntPtr(style&~0x0100L));
+        }
+        ClearInactiveSelection();
+        ClearSelectionAfterNativeUpdate();
+    }
+    protected override void OnTextChanged(EventArgs e){base.OnTextChanged(e);ClearSelectionAfterNativeUpdate();}
+    protected override void OnVisibleChanged(EventArgs e){base.OnVisibleChanged(e);ClearSelectionAfterNativeUpdate();}
+    protected override void OnLeave(EventArgs e)
+    {base.OnLeave(e);if(DropDownStyle==ComboBoxStyle.DropDown){SelectionStart=Text.Length;SelectionLength=0;}}
+    protected override void OnBackColorChanged(EventArgs e)
+    {if(fieldBrush!=IntPtr.Zero){DeleteObject(fieldBrush);fieldBrush=IntPtr.Zero;}base.OnBackColorChanged(e);}
+    protected override void OnHandleDestroyed(EventArgs e)
+    {if(fieldBrush!=IntPtr.Zero){DeleteObject(fieldBrush);fieldBrush=IntPtr.Zero;}base.OnHandleDestroyed(e);}
     protected override void OnDrawItem(DrawItemEventArgs e)
     {
         var selected=(e.State&DrawItemState.Selected)!=0;
@@ -26,13 +72,22 @@ internal class DarkChoice : ComboBox
     }
     protected override void WndProc(ref Message m)
     {
+        if(m.Msg is 0x000F or 0x0317 or 0x0318)ClearInactiveSelection();
         base.WndProc(ref m);
+        if(m.Msg is 0x0133 or 0x0138)
+        {
+            // The native edit requests STATIC colors when its combo is disabled.
+            // Keep the same dark field instead of the system white/grey brush.
+            SetTextColor(m.WParam,ColorRef(ForeColor));SetBkColor(m.WParam,ColorRef(BackColor));
+            if(fieldBrush==IntPtr.Zero)fieldBrush=CreateSolidBrush(ColorRef(BackColor));
+            m.Result=fieldBrush;return;
+        }
         bool print=m.Msg is 0x0317 or 0x0318;
         if(m.Msg!=0x000F&&!print)return;
         var info=new ComboInfo{Size=Marshal.SizeOf<ComboInfo>()};
         if(!GetComboBoxInfo(Handle,ref info))return;
         using var graphics=print?Graphics.FromHdc(m.WParam):Graphics.FromHwnd(Handle);
-        if(DropDownStyle==ComboBoxStyle.DropDownList||!Enabled)
+        if(DropDownStyle==ComboBoxStyle.DropDownList||!Enabled||(print&&!ContainsFocus))
         {
             var item=Rectangle.FromLTRB(info.Item.Left,info.Item.Top,info.Item.Right,info.Item.Bottom);
             using var field=new SolidBrush(BackColor);graphics.FillRectangle(field,item);

@@ -11,14 +11,17 @@ internal sealed unsafe class TxEngine : IDisposable
     private readonly RotatingLog log;
     private CancellationTokenSource? stop;
     private Thread? worker;
-    private TxSnapshot snapshot = new();
+    private double requestedRateHz;
+    private TxSnapshot snapshot = new(){Status="STOPPED"};
     public TxSnapshot Snapshot => Volatile.Read(ref snapshot);
     public bool IsAlive => worker?.IsAlive == true;
+    public double RequestedRateHz => Volatile.Read(ref requestedRateHz);
     public TxEngine(NiDeviceSession device, RotatingLog log) { this.device = device; this.log = log; }
     public void Start(TxConfiguration config)
     {
         config.Validate();
         if (IsAlive) throw new InvalidOperationException("TX already running. Stop TX before reconfiguration.");
+        Volatile.Write(ref requestedRateHz,config.RateHz);
         stop?.Dispose(); stop = new();
         Volatile.Write(ref snapshot, new TxSnapshot
         {
@@ -85,6 +88,12 @@ internal sealed unsafe class TxEngine : IDisposable
             queue = new TxSampleQueue(c.QueueMiB);
             if (c.IsLiveRing)
             {
+                // Do not expose an attachable ring while RFSG/DMA configuration
+                // can still block longer than a client's writeStream timeout.
+                // Configure first; GNU Radio can then start filling prefetch.
+                log.Event("INFO","tx.initializing",new {stage="Configuring TX DMA FIFO and RFSG",c.FifoMiB,c.CenterHz,c.RateHz,c.PeakDbm});
+                hardware = new NiTxHardware(device, c.FifoMiB);
+                hardware.Configure(c.CenterHz, c.RateHz, c.PeakDbm);
                 log.Event("INFO","tx.initializing",new {stage="Opening live IQ shared memory and waiting for client",c.RingName,c.RingMiB});
                 live = new SharedTxRing(c.RingName, c.RingMiB, create: true);
                 state = "PREFILLING"; Update();
@@ -167,9 +176,12 @@ internal sealed unsafe class TxEngine : IDisposable
             }
 
             producer.Start();
-            log.Event("INFO","tx.initializing",new {stage="Configuring TX DMA FIFO and RFSG",c.FifoMiB,c.CenterHz,c.RateHz,c.PeakDbm});
-            hardware = new NiTxHardware(device, c.FifoMiB);
-            hardware.Configure(c.CenterHz, c.RateHz, c.PeakDbm);
+            if(hardware==null)
+            {
+                log.Event("INFO","tx.initializing",new {stage="Configuring TX DMA FIFO and RFSG",c.FifoMiB,c.CenterHz,c.RateHz,c.PeakDbm});
+                hardware = new NiTxHardware(device, c.FifoMiB);
+                hardware.Configure(c.CenterHz, c.RateHz, c.PeakDbm);
+            }
             state = "PREFILLING"; Update();
             void Transfer(int timeoutMs=500)
             {

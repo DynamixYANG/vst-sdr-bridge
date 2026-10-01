@@ -1,3 +1,3 @@
 # releases
 
-Versioned release descriptions and local upload archives. The current 2.2 folder contains application/plugin/source packages, SHA-256 checksums and release notes. The 2.1 folder preserves the previous release and its superseded validation record.
+Current patch: 2.2.1, startup and native configuration-field fixes. Folder 2.2 retains the immutable 2.2.0 release and its original acceptance. Folder 2.1 preserves earlier releases and superseded validation.

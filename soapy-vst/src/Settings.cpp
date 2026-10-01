@@ -33,7 +33,9 @@ Device::Device(const SoapySDR::Kwargs &args) : _args(args)
   if (args.count("serial")) { /* ignore */ }
   ensureBackend();
   if (_backendKind==BackendKind::Dma && (!args.count("transport") || args.at("transport")!="tcp")) {
-    _centerHz=std::stod(_backend->frontend("actual_center_hz"));
+    const double initialCenter=std::stod(_backend->frontend("actual_center_hz"));
+    // A cold, stopped Hub has no RFSA readback yet (zero in the ring).
+    if(initialCenter>=65e6 && initialCenter<=6e9) _centerHz=initialCenter;
     _refLevel=std::stod(_backend->frontend("actual_reference_dbm"));
     if (!args.count("rate")) _iqRate=std::stod(_backend->frontend("actual_rate_sps"));
     if (args.count("reference_level_dbm")) writeSetting("reference_level_dbm",args.at("reference_level_dbm"));
@@ -170,7 +172,7 @@ double Device::getGain(const int direction, const size_t, const std::string &nam
     return _txPeakDbm;
   }
   if (name!="RefLevel" && name!="REFLEVEL" && name!="reference_level_dbm" && !name.empty()) throw std::invalid_argument("Unknown gain name: "+name);
-  if (_backendKind==BackendKind::Dma) return std::stod(_backend->frontend("actual_reference_dbm"));
+  if (_backendKind==BackendKind::Dma && _streamActive) return std::stod(_backend->frontend("actual_reference_dbm"));
   return _refLevel;
 }
 
@@ -233,7 +235,7 @@ double Device::getFrequency(const int direction, const size_t channel) const
 double Device::getFrequency(const int direction, const size_t, const std::string &) const
 {
   if (direction == SOAPY_SDR_TX) return _txCenterHz;
-  if (_backendKind==BackendKind::Dma) return std::stod(_backend->frontend("actual_center_hz"));
+  if (_backendKind==BackendKind::Dma && _streamActive) return std::stod(_backend->frontend("actual_center_hz"));
   return _centerHz;
 }
 
@@ -271,7 +273,7 @@ void Device::setSampleRate(const int direction, const size_t, const double rate)
   if (_backendKind==BackendKind::Dma) {
     try {
       _backend->configure(_centerHz,rate,_refLevel,_blockSamples);
-      _iqRate=std::stod(_backend->frontend("actual_rate_sps"));
+      _iqRate=_streamActive?std::stod(_backend->frontend("actual_rate_sps")):rate;
       _lastError.clear();
     } catch (const std::exception &e) { _lastError=e.what(); SoapySDR::log(SOAPY_SDR_ERROR,_lastError); }
     return;
@@ -289,7 +291,7 @@ void Device::setSampleRate(const int direction, const size_t, const double rate)
 double Device::getSampleRate(const int direction, const size_t) const
 {
   if (direction == SOAPY_SDR_TX) return _txRate;
-  if (_backendKind==BackendKind::Dma) return std::stod(_backend->frontend("actual_rate_sps"));
+  if (_backendKind==BackendKind::Dma && _streamActive) return std::stod(_backend->frontend("actual_rate_sps"));
   return _iqRate;
 }
 

@@ -1,6 +1,10 @@
-# VST Bridge 2.2 handoff
+# VST Bridge 2.2.1 handoff
 
-Read root README.zh-CN.md / README.md and docs/VALIDATION.md. Current app: dist/VSTHub/VSTHub.exe (2.2.0), with matching native plugin. TX/RX Start/Stop are fixed in the footer on every page; TX/RX suggested numeric dropdowns use dark backgrounds and white text. Separate header states, launch-only Bridge parameters, corrected monitor spacing, editable TX rate/queue/FIFO/prefill, hover help, idle No client data and initialization logs are complete.
+Current patch: dist/VSTHub/VSTHub.exe (2.2.1). Cold startup initializes the device while RX/TX remain stopped. Native dropdown selection and disabled edit colors are fixed. See VALIDATION-2.2.1.md and releases/2.2.1/RELEASE-NOTES.md for current binary identities and regression scope. The following 2.2.0 record is retained history.
+
+## Historical 2.2.0 handoff
+
+Read root README.zh-CN.md / README.md and docs/VALIDATION.md. Historical app: dist/VSTHub/VSTHub.exe (2.2.0), with matching native plugin. TX/RX Start/Stop are fixed in the footer on every page; TX/RX suggested numeric dropdowns use dark backgrounds and white text. Separate header states, launch-only Bridge parameters, corrected monitor spacing, editable TX rate/queue/FIFO/prefill, hover help, idle No client data and initialization logs are complete.
 
 ## Validation
 

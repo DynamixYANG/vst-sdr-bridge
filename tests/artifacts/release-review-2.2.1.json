@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "release_binary_sha256": {
+    "VSTHub.exe": "6b5a21ff376676317e6246003909973d382b823d792ff248febca6976d4bf392",
+    "vstSupport.dll": "63e2bae5fdeb8fc45cc117f70e97493889e4999b2430b5c16ad512278234c40a"
+  },
+  "scope": "2.2.1 cold startup, native staged-setting/activation compatibility, TX initialization ordering and UI fixes. Native module differs from 2.2.0. Historical long runs remain bound to their original binaries; no new 20-minute run claimed.",
+  "checks": {
+    "selftests": 39,
+    "cold_start_hardware": 7,
+    "native_soapy_idle": 8,
+    "actual_ui_renders": 12,
+    "configuration_renders_visually_inspected": 4,
+    "grc_seconds": 120.09399999999914,
+    "grc_console_errors": false
+  },
+  "development_failures_preserved": true
+}

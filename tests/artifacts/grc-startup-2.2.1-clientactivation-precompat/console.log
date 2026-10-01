@@ -1,0 +1,12 @@
+[1m[33m[WARNING] SoapyVOLKConverters: no VOLK config file found. Run volk_profile for best performance.[0m
+[INFO] vst dma: SHM Local\vst_live_v2 cap=268435456
+[INFO] vst: resource=RIO0 backend=dma tx_ring=Local\vst_tx_v1
+[1m[31m[ERROR] Hardware tuning failed: OK RX configuration saved for next START; hardware readback unchanged[0m
+[1m[31m[ERROR] invalid map<K, T> key[0m
+[1m[31m[ERROR] invalid map<K, T> key[0m
+source :info: set_min_output_buffer on block 1 to 1048576
+vector_source :info: set_min_output_buffer on block 5 to 1048576
+VST Bridge example 2.2.0: TX scheduler 262144; RX/TX buffers 1048576
+[INFO] vst tx: setupStream TX -> Hub live_ring (not a second RF stack)
+thread_body_wrapper :error: ERROR thread[thread-per-block[2]: <block source(1)>]: Hardware tuning failed: OK RX configuration saved for next START; hardware readback unchanged
+[INFO] vst tx: writeStream -> Local\vst_tx_v1 (Hub live_ring, rf_enabled=true)

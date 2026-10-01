@@ -26,6 +26,10 @@ TXDEFAULTS updates buffer defaults without disturbing an active stream. Live cli
 
 Loopback TCP port 19788 serves legacy commands and versioned JSON requests. Each connection carries one command/response. Mutations execute on the RX owner thread; TX starts asynchronously and must be followed through `tx.status`.
 
+At cold startup only the shared NI device session and control/shared-memory endpoints initialize. Both workers remain stopped; RX DMA allocation/configuration/acquisition happens on explicit START. File/live TX can start independently before the first RX start.
+
+Editable configuration controls clear native edit selection when unfocused and remove ES_NOHIDESEL. Native edit/static color messages preserve dark backgrounds, including disabled fields. Intentional selection while editing remains available.
+
 The WinForms application has Bridge, RX Monitor, TX Monitor, RX Configuration, TX Configuration and Logs & Debug pages. Bridge configures both application's executable paths/launch arguments. RX/TX Configuration share editable dark dropdowns and suggested values. Independent RX/TX Start/Stop controls remain fixed in the window footer across every page. Header badges report both directions. Option-specific hover text replaces inline notes; monitor labels/bars occupy separate autosized rows. Logs & Debug displays initialization stages, plugin checks, launch events and stream lifecycle, and exports snapshots. An asynchronous bounded logger rotates UTC JSONL files. Status snapshots are atomic files, not synchronization primitives.
 
 Native plugin deployment compares SHA-256 with the embedded DLL, backs up previous versions and atomically replaces the destination. Close client applications before updating a loaded DLL. A full build compiles the native plugin before embedding it; matching hashes eliminate the old manual-copy workaround.

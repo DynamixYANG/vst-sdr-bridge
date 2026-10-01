@@ -44,7 +44,12 @@ internal static class SelfTests
             var options=new HubOptions {RingName=@"Local\vst_hub_test_"+Guid.NewGuid().ToString("N"),ControlPort=port};
             using(var engine=new HubEngine(options,Path.Combine(testRoot,"engine"),o=>new FakeRx(o.BlockSamples)))
             {
-                engine.Start(); SpinWait.SpinUntil(()=>engine.Snapshot.Status==EngineState.RUNNING,10000);
+                engine.Start(); SpinWait.SpinUntil(()=>engine.Snapshot.Status==EngineState.STOPPED,10000);
+                Check(engine.Snapshot.Status==EngineState.STOPPED&&!engine.Snapshot.Ring.Active&&engine.Snapshot.Ring.WriteIdx==0,"startup leaves RX stopped without publishing IQ");
+                var idleWrite=engine.Snapshot.Ring.WriteIdx;Thread.Sleep(200);
+                Check(engine.Snapshot.Status==EngineState.STOPPED&&engine.Snapshot.Ring.WriteIdx==idleWrite,"idle initialization never starts RX asynchronously");
+                Check(engine.Command("START").Result.StartsWith("OK "),"explicit START begins RX after initialization");
+                SpinWait.SpinUntil(()=>engine.Snapshot.Status==EngineState.RUNNING,10000);
                 Check(engine.Snapshot.Status==EngineState.RUNNING,"fake driver initialization");
                 var epoch=engine.Snapshot.Ring.Epoch;
                 Check(engine.Command("CONFIG2 reference_level_dbm=nan").Result.StartsWith("ERR "),"invalid transaction rejected");

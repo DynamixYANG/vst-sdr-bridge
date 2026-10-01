@@ -1,11 +1,13 @@
-param([string]$Version='2.2.0',[switch]$AllowIncomplete)
+param([string]$Version='2.2.1',[switch]$AllowIncomplete)
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
 $releaseSeries=($Version.Split('.')[0..1] -join '.')
+if($Version -ne '2.2.0'){$releaseSeries=$Version}
 $acceptance=@('grc-normal-2.2-20min','gqrx-tdms-2.2-accepted17','gqrx-tdms-2.2-interrupted','tx-controls-2.2','tx-startup-2.2','independence-2.2','independence-footer-2.2','ui-footer-final-2.2','grc-manual-timeout','grc-normal-2.1.1-sse-start1')
+if($Version -eq '2.2.1'){$acceptance+=@('startup-2.2.1','ui-idle-2.2.1','soapy-idle-2.2.1','grc-startup-2.2.1-smoke','grc-startup-2.2.1-standard-buffers','grc-startup-2.2.1-clientactivation-precompat','grc-startup-2.2.1-clientactivation-before-tx-order','grc-startup-2.2.1-clientactivation-staged-clock','grc-startup-2.2.1-clientactivation')}
 if(-not $AllowIncomplete){
  . (Join-Path $PSScriptRoot 'Test-ReleaseAcceptance.ps1')
- Test-ReleaseAcceptance $root
+ Test-ReleaseAcceptance $root $Version
 }
 $stage=Join-Path $root ('work\release-stage-'+(Get-Date -Format yyyyMMdd-HHmmss))
 $out=Join-Path $root ('docs\releases\'+$releaseSeries)
@@ -35,6 +37,7 @@ Copy-Item (Join-Path $root 'tests\GQRX-CAPTURE.md') (Join-Path $stage 'VST-Bridg
 Copy-Item (Join-Path $root 'tests\review_rf_spectrum.py'),(Join-Path $root 'tests\gqrx-capture-instrumentation.patch') (Join-Path $stage 'VST-Bridge\tests')
 Copy-Item (Join-Path $root 'tests\artifacts\release-binary-hashes-2.2.json') (Join-Path $stage 'VST-Bridge\tests\artifacts')
 Copy-Item (Join-Path $root 'tests\artifacts\release-review-2.2.json'),(Join-Path $root 'tests\artifacts\release-ui-binary-hashes-2.2.json'),(Join-Path $root 'tests\artifacts\selftest-result.json') (Join-Path $stage 'VST-Bridge\tests\artifacts')
+if($Version -eq '2.2.1'){Copy-Item (Join-Path $root 'tests\artifacts\release-review-2.2.1.json') (Join-Path $stage 'VST-Bridge\tests\artifacts')}
 @'
 # Start VST Bridge
 

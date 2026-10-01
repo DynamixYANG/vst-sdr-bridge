@@ -14,6 +14,8 @@ TXDEFAULTS {"queue_mi_b":64,"fifo_mi_b":128,"prefill_blocks":16}
 SHUTDOWN
 ```
 
+On application startup, the shared device and control endpoint initialize, but both directions remain STOPPED. No RX DMA FIFO is allocated and no IQ is published until START. CONFIG2 while stopped saves settings without starting RX; TXSTART can operate before RX has ever run. Native Soapy RX activation sends START.
+
 START/STOP apply to RX only. TXSTART is asynchronous: an acknowledgement means queued startup; wait for `tx.status=STREAMING` and inspect `tx.error`. TXSTOP stops only TX and invokes RF-off. SHUTDOWN releases both directions and the shared session. RF is disabled by default. File source accepts TDMS or CS16 plus a same-basename JSON sidecar.
 
 The versioned JSON envelope is also supported:
@@ -31,3 +33,7 @@ TXIDLE is sent by a normally stopping Soapy client. It stops TX/RF and reports W
 TXDEFAULTS updates queue/FIFO/prefill defaults for the next live client activation. Apply TX saves these settings on disk and sends TXDEFAULTS. A live TXSTART that explicitly supplies queue_mi_b, fifo_mi_b or prefill_blocks overrides those defaults. File playback always uses the supplied configuration. The client controls live TX center/rate/peak/RF settings; the TX Configuration radio fields configure file playback.
 
 TX rate is 1–120 MS/s with exact readback within 1 Hz; file metadata must match. Queue is 16–256 MiB in multiples of 4; host FIFO is 64–512 MiB; file prefill is 4–32 blocks of 4 MiB and strictly less than the FIFO. Live startup uses max(requested, min(48, FIFO MiB/4 - 1)) blocks, allowing a bounded 15-second first-data window. Steady live source starvation is limited to 500 ms. At lower rates, DMA backpressure timeout accounts for one block's drain time plus 500 ms.
+
+## Staged configuration replies (2.2.1)
+
+While RX is stopped, CONFIG2 replies include requested center_hz/rate_hz/reference_level_dbm and pending=1; legacy CONFIG returns the numeric tuple followed by pending=1. These acknowledge validated staged settings, not hardware readback. STATUS applied_* remains unchanged until START applies them. Both replies are parseable by the matching native plugin.
