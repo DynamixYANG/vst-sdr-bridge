@@ -1,6 +1,6 @@
 # VST Bridge
 
-[下载 v2.2.1 Release](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.1)。仓库为 private，请使用有访问权限的 GitHub 账号登录。应用、独立 Soapy 插件、tag 源码及 SHA-256 校验文件均已发布。
+[下载 v2.2.1 Release](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.1)。仓库现为公开仓库。应用、独立 Soapy 插件、tag 源码及 SHA-256 校验文件均已发布。
 
 面向 **GNU Radio / GQRX 的 NI VST 中间件**。在一个 Windows 界面内完成设备配置、应用启动、TX/RX 控制、数据流监控、故障诊断和日志查看。当前硬件适配器支持 NI PXIe-5644R。
 
@@ -30,6 +30,16 @@
 
 120 MS/s 指复数 IQ 采样率，CS16 单方向为 480 MB/s（3.84 Gbit/s），CF32 为 960 MB/s。设备模拟 RF 带宽约 80 MHz，不能将 120 MS/s 等同于 120 MHz 平坦射频带宽。
 
+## Requirements／运行与编译依赖
+
+运行：Windows x64、NI PXIe-5644R、NI-RFSA/RFSG、NI-RIO/FPGA 支持及匹配的 NI Streaming for VST bitfile；客户端使用 radioconda x64 的 SoapySDR 0.8，按需启动 GNU Radio 或 GQRX。EXE 已包含 .NET，原生文件播放无需 LabVIEW 或 Python 桥接服务。
+
+编译另需 .NET 10 SDK、MSVC／Windows SDK、CMake/Ninja 和 NI 开发头文件／导入库。波形生成、测试的 Python 依赖见 [requirements-dev.txt](requirements-dev.txt)。本机版本、安装路径及外部文件审计详见 [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)。
+
+TX 波形统一放在 `waveform/`，此前选中的 100 MHz 文件及元数据移到 `waveform/legacy/`。NI bitfile 本机副本放在 `hardware/ni-pxie-5644r/local/`；Hub 保存路径已更新。原 NI 安装位置的同名 bitfile 仍是驱动初始化依赖，应保留。公开 GitHub 提供来源、校验值、原许可和导入脚本，NI 专有 bitfile 本体不公开分发。关闭 Hub 后，可用 `scripts/Import-NiBitfile.ps1` 和 `scripts/Set-ProjectAssets.ps1` 配置新机器。
+
+以上目录和脚本针对当前源码目录。既有 v2.2.1 Release 压缩包保留原 `waveforms/` 布局及已测试程序，使用旧发行包时按包内路径操作。
+
 ## 使用流程
 
 1. 安装 NI-RFSA、NI-RIO/FPGA 支持及 NI Streaming for VST bitfile，准备 x64 radioconda、GNU Radio、GQRX 和 SoapySDR 0.8。
@@ -51,7 +61,7 @@ RX 中心频率/参考电平可在 TX 运行时调整。改变共享采样时钟
 
 ### TDMS 四路 NR 载波
 
-直接选择 `waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.tdms`。四路 DL FDD NR-FR1-TM3.1a，256QAM、每路 20 MHz、30 kHz SCS、51 PRB，载波相对中心为 −30/−10/+10/+30 MHz，总标称带宽 80 MHz。10 ms 波形在 120 MS/s 下包含 1,200,000 个复数样本。
+直接选择 `waveform/nr-tm3.1a-fdd-4x20mhz-120msps.tdms`。四路 DL FDD NR-FR1-TM3.1a，256QAM、每路 20 MHz、30 kHz SCS、51 PRB，载波相对中心为 −30/−10/+10/+30 MHz，总标称带宽 80 MHz。10 ms 波形在 120 MS/s 下包含 1,200,000 个复数样本。
 
 本机不具备 NI NR personality 授权，因此使用具有来源记录的开放参考资源网格，经 OFDM 和重采样生成。资源网格往返检查、样本数、峰均比和 SHA-256 记录在同名 JSON 中。该波形用于传输和频谱验证，不等同于 EVM、ACLR 或 PN23 一致性认证。
 
@@ -70,7 +80,8 @@ TDMS / CS16 → 校验并预加载 ───────────────
 | 目录 | 内容 |
 |---|---|
 | `examples` | 用户范例及运行说明 |
-| `waveforms` | 当前 TDMS/CS16、元数据、参考文件与许可证 |
+| `hardware` | NI bitfile 来源、校验、导入说明与本地副本 |
+| `waveform` | 当前 TDMS/CS16、元数据、参考文件与许可证 |
 | `scripts` | 编译、波形生成、范例启动、Release 打包 |
 | `tests` | 回归、自检、独立性及持续运行测试；`artifacts` 保存原始证据 |
 | `docs` | 架构、API、交接、测试结果与版本说明 |

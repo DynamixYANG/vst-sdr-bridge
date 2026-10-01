@@ -5,7 +5,7 @@ from scipy.signal import resample_poly
 from nptdms import TdmsWriter,RootObject,GroupObject,ChannelObject,TdmsFile
 root=pathlib.Path(__file__).resolve().parents[1]
 reference='nrTestMode_testvec_135_scs_30kHz_BW_20MHz_FDD_NR-FR1-TM3.1a.mat'
-raw=(root/'waveforms/reference'/reference).read_bytes();m=loadmat(io.BytesIO(raw))
+raw=(root/'waveform/reference'/reference).read_bytes();m=loadmat(io.BytesIO(raw))
 assert int(m['BW'][0,0])==20 and int(m['Scs'][0,0])==30 and m['dm'][0]=='FDD' and m['dlnrref'][0]=='NR-FR1-TM3.1a'
 fd=m['fd_slot_data'][0]; nfft=1024; nsc=51*12
 assert fd.size==20*14*nsc
@@ -21,7 +21,7 @@ y=resample_poly(np.tile(x,3),125,32,window=('kaiser',10));y=y[1200000:2400000]
 t=np.arange(len(y))/120e6
 mix=sum(np.roll(y,k*30100)*np.exp(2j*np.pi*f*t+1j*k*np.pi/7) for k,f in enumerate([-30e6,-10e6,10e6,30e6]))
 mix*=.8/np.max(abs(mix));iq=np.column_stack([np.rint(mix.real*32767),np.rint(mix.imag*32767)]).astype('<i2')
-out=root/'waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.cs16';out.parent.mkdir(exist_ok=True)
+out=root/'waveform/nr-tm3.1a-fdd-4x20mhz-120msps.cs16';out.parent.mkdir(exist_ok=True)
 iq.tofile(out.with_suffix('.cs16'))
 props={'rate_hz':120e6,'model':'NR-FR1-TM3.1a','duplex':'FDD','modulation':'256QAM','carriers':4,'channel_bandwidth_hz':20e6,'scs_hz':30000.,'carrier_offsets_hz':'-30000000,-10000000,10000000,30000000'}
 with TdmsWriter(out.with_suffix('.tdms')) as w:

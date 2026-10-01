@@ -14,7 +14,7 @@ def check(name,test):
  s=status();snapshots.append(s);assert test(s),name;checks.append(name)
 try:
  command('TXSTOP');command('STOP')
- cfg={'source':'file','waveform_path':str(root/'waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.tdms'),'center_hz':2500000000,'rate_hz':120000000,'peak_dbm':-10,'rf_enabled':False}
+ cfg={'source':'file','waveform_path':str(root/'waveform/nr-tm3.1a-fdd-4x20mhz-120msps.tdms'),'center_hz':2500000000,'rate_hz':120000000,'peak_dbm':-10,'rf_enabled':False}
  assert command('TXSTART '+json.dumps(cfg)).startswith('OK');wait_tx();time.sleep(5)
  check('TDMS TX alone while RX stopped',lambda s:s['status']=='STOPPED' and s['tx']['status']=='STREAMING' and s['tx']['processed_msps']>119 and s['tx']['underflows']==0)
  assert command('CONFIG2 center_hz=2500000000,reference_level_dbm=-20,rate_hz=120000000').startswith('OK')

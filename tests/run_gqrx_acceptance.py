@@ -26,7 +26,7 @@ try:
  else:raise TimeoutError('GQRX DSP remote control')
  time.sleep(5);command('L RefLevel_GAIN -20',7356);command('CONFIG2 reference_level_dbm=-20');time.sleep(2)
  baseline=probe(out/'rx-rf-off-before')
- cfg={'source':'file','waveform_path':str(root/'waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.tdms'),'center_hz':2500000000,'rate_hz':120000000,'peak_dbm':-10,'rf_enabled':True}
+ cfg={'source':'file','waveform_path':str(root/'waveform/nr-tm3.1a-fdd-4x20mhz-120msps.tdms'),'center_hz':2500000000,'rate_hz':120000000,'peak_dbm':-10,'rf_enabled':True}
  assert command('TXSTART '+json.dumps(cfg)).startswith('OK')
  for _ in range(100):
   s=status()

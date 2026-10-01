@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-[Download VST Bridge v2.2.1](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.1) · Private repository; sign in with an authorized GitHub account. Application, standalone Soapy plugin, tagged source and SHA-256 checksums are published.
+[Download VST Bridge v2.2.1](https://github.com/DynamixYANG/vst-sdr-bridge/releases/tag/v2.2.1) · Public source repository. Application, standalone Soapy plugin, tagged source and SHA-256 checksums are published.
 
 **NI VST ↔ GNU Radio / GQRX middleware for Windows.**
 
@@ -34,6 +34,16 @@ Project-owned Hub, plugin and supporting code use [GNU GPL v3 or later](LICENSE)
 
 120 MS/s describes complex IQ sample rate. It is 480 MB/s / 3.84 Gbit/s for CS16 per direction, or 960 MB/s / 7.68 Gbit/s for CF32. The 5644R nominal RF bandwidth is approximately 80 MHz; it is not a 120 MHz flat RF passband.
 
+## Requirements
+
+Runtime: Windows x64, NI PXIe-5644R, NI-RFSA/RFSG and NI-RIO/FPGA support, the matching NI Streaming for VST bitfile, and radioconda x64 with SoapySDR 0.8 plus GNU Radio or GQRX as needed. The EXE bundles .NET; native TX file playback needs no Python bridge or LabVIEW.
+
+Source builds additionally need .NET 10 SDK, MSVC/Windows SDK, CMake/Ninja and NI headers/import libraries. Generation/tests use the pinned [requirements-dev.txt](requirements-dev.txt). Exact observed versions, installed paths and the external-file audit are in [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md).
+
+TX assets are consolidated in `waveform/`. The NI bitfile is archived locally under `hardware/ni-pxie-5644r/local/`, with provenance and original terms alongside it. Run `scripts/Import-NiBitfile.ps1` and `scripts/Set-ProjectAssets.ps1` with the Hub closed. The vendor-installed bitfile remains required by current RFSA/RFSG initialization; the local vendor binary is excluded from this public repository and public packages.
+
+These paths/tools describe the current source checkout. Existing v2.2.1 release ZIPs retain their original `waveforms/` layout and tested binaries; use that path when running an unchanged release archive.
+
 ## Quick start
 
 1. Install NI-RFSA, NI-RIO/FPGA support, NI Streaming for VST bitfile and radioconda with GNU Radio / GQRX / SoapySDR 0.8, all x64.
@@ -41,7 +51,7 @@ Project-owned Hub, plugin and supporting code use [GNU GPL v3 or later](LICENSE)
 3. Set center, sample rate and reference level on **RX Configuration**, then **Apply RX**.
 4. On **Bridge**, choose **Launch GQRX** or **Launch GNU Radio**. GQRX device string: `soapy=0,driver=vst,resource=RIO0`. Soapy/GNU Radio device arguments: `driver=vst,resource=RIO0`.
 5. Match the application's input rate to the Bridge rate. Enable GQRX DSP, or run a GNU Radio flowgraph.
-6. For file TX, select `waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.tdms` on **TX Configuration**, set center/peak, explicitly enable RF and click **Start TX**. RX may remain running or be stopped.
+6. For file TX, select `waveform/nr-tm3.1a-fdd-4x20mhz-120msps.tdms` on **TX Configuration**, set center/peak, explicitly enable RF and click **Start TX**. RX may remain running or be stopped.
 7. Stop each direction independently. **Stop TX** stops file or live TX; close the producer flowgraph before restarting live TX.
 
 GQRX and GNU Radio may both be open. Only one can receive IQ; a TX-only GNU Radio flowgraph can coexist with GQRX RX. Stop TX before changing the shared IQ clock or resizing device buffers.
@@ -70,7 +80,8 @@ There is one RFSA/RFSG/FPGA session owner. File parsing happens before RF starts
 | `soapy-vst/` | C++ SoapySDR RX/TX plugin and GRC block definition |
 | `gr-vst/` | Optional Python blocks; legacy direct-Fetch RX is clearly marked |
 | `examples/` | Editable application examples and launch instructions |
-| `waveforms/` | Reproducible TDMS/CS16 stimuli, metadata and provenance |
+| `hardware/` | NI bitfile provenance/import tools and local vendor archive |
+| `waveform/` | Reproducible TDMS/CS16 stimuli, metadata and provenance |
 | `scripts/` | Native build, waveform generation and release tooling |
 | `tests/` | Maintained regression/acceptance tests and current evidence |
 | `docs/` | Architecture, API, handoff, validation and release notes |

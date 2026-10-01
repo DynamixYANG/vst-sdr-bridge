@@ -2,7 +2,7 @@
 """Live QT Frequency + Waterfall sink for PXIe-5644R via gr-vst.
 
 Usage (radioconda Prompt / PATH with radioconda):
-  set PYTHONPATH=C:\\Users\\yang\\Documents\\Codex\\2026-09-28\\yaml-c-users-yang-documents-pxie5644r\\gr-vst\\python
+  set PYTHONPATH=C:\\Users\\yang\\Documents\\vst-sdr-bridge\\gr-vst\\python
   python examples\\run_fft.py --rate 10e6 --center 1e9 --ref 0 --seconds 30
 
 Defaults stay at 10 MS/s for GUI headroom. Validated Fetch ceiling on this

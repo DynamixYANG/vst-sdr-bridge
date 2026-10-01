@@ -11,3 +11,6 @@
 *.dll binary
 *.log -whitespace
 *.patch -whitespace
+
+*.lvbitx binary
+hardware/ni-pxie-5644r/NI-SAMPLE-CODE-LICENSE.txt -whitespace

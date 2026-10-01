@@ -13,7 +13,7 @@ $stage=Join-Path $root ('work\release-stage-'+(Get-Date -Format yyyyMMdd-HHmmss)
 $out=Join-Path $root ('docs\releases\'+$releaseSeries)
 New-Item -ItemType Directory -Force $stage,$out,(Join-Path $stage 'VST-Bridge'),(Join-Path $stage 'SoapyVST') | Out-Null
 Copy-Item (Join-Path $root 'dist\VSTHub\VSTHub.exe') (Join-Path $stage 'VST-Bridge\VSTHub.exe')
-foreach($dir in @('examples','waveforms')){
+foreach($dir in @('examples','waveform')){
  Get-ChildItem (Join-Path $root $dir) -File -Recurse | Where-Object { $_.FullName -notmatch '[\\/]__pycache__[\\/]' } | ForEach-Object {
   $relative=$_.FullName.Substring($root.Length+1)
   $destination=Join-Path $stage "VST-Bridge\$relative"
@@ -28,12 +28,18 @@ Copy-Item (Join-Path $root 'README.md'),(Join-Path $root 'README.zh-CN.md'),(Joi
 foreach($package in @('VST-Bridge','SoapyVST')){
  Copy-Item (Join-Path $root 'LICENSE'),(Join-Path $root 'NOTICE'),(Join-Path $root 'LICENSE-EXCEPTIONS.md'),(Join-Path $root 'THIRD-PARTY-NOTICES.md') (Join-Path $stage $package)
  Copy-Item (Join-Path $root 'LICENSES') (Join-Path $stage $package) -Recurse
- $fixtureNotice=Join-Path $stage "$package\waveforms\reference"
+ $fixtureNotice=Join-Path $stage "$package\waveform\reference"
  New-Item -ItemType Directory -Force $fixtureNotice | Out-Null
- Copy-Item (Join-Path $root 'waveforms\reference\LICENSE.txt') $fixtureNotice
+ Copy-Item (Join-Path $root 'waveform\reference\LICENSE.txt') $fixtureNotice
 }
 New-Item -ItemType Directory -Force (Join-Path $stage 'VST-Bridge\scripts') | Out-Null
-Copy-Item (Join-Path $root 'scripts\Launch-Example.ps1'),(Join-Path $root 'scripts\generate_nr_four_carrier.py'),(Join-Path $root 'scripts\README.md') (Join-Path $stage 'VST-Bridge\scripts')
+Copy-Item (Join-Path $root 'scripts\Launch-Example.ps1'),(Join-Path $root 'scripts\generate_nr_four_carrier.py'),(Join-Path $root 'scripts\README.md'),(Join-Path $root 'scripts\Import-NiBitfile.ps1'),(Join-Path $root 'scripts\Set-ProjectAssets.ps1'),(Join-Path $root 'scripts\Test-ProjectDependencies.ps1') (Join-Path $stage 'VST-Bridge\scripts')
+# Include NI provenance and import notices, never the local vendor binary.
+foreach($relative in @('hardware\README.md','hardware\ni-pxie-5644r\README.md','hardware\ni-pxie-5644r\manifest.json','hardware\ni-pxie-5644r\NI-SAMPLE-CODE-LICENSE.txt','hardware\ni-pxie-5644r\local\README.md')){
+ $destination=Join-Path $stage ('VST-Bridge\'+$relative)
+ New-Item -ItemType Directory -Force (Split-Path -Parent $destination) | Out-Null
+ Copy-Item -LiteralPath (Join-Path $root $relative) -Destination $destination
+}
 New-Item -ItemType Directory -Force (Join-Path $stage 'VST-Bridge\tests\artifacts') | Out-Null
 foreach($test in $acceptance){
  $dest=Join-Path $stage "VST-Bridge\tests\artifacts\$test"
@@ -52,9 +58,9 @@ Run VSTHub.exe in this directory. NI drivers/bitfile and radioconda must already
 The application installs its matching embedded SoapySDR plugin. See README.zh-CN.md or README.md.
 The source-tree path dist/VSTHub/VSTHub.exe in those documents corresponds to ./VSTHub.exe in this package.
 GNU Radio example: examples/grc/vst_bridge_120_duplex.grc.
-TDMS example: waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.tdms.
+TDMS example: waveform/nr-tm3.1a-fdd-4x20mhz-120msps.tdms.
 Validation and application captures: docs/VALIDATION.md and tests/artifacts.
-Build tools require the full source repository; only Launch-Example.ps1 and waveform generation are standalone here.
+Build tools require the full source repository. Launch-Example.ps1, waveform generation and the asset import/configuration/audit scripts are standalone here.
 '@ | Set-Content -Encoding utf8 (Join-Path $stage 'VST-Bridge\START-HERE.md')
 Copy-Item (Join-Path $root 'soapy-vst\build-vst\vstSupport.dll') (Join-Path $stage 'SoapyVST')
 Copy-Item (Join-Path $root 'soapy-vst\README.md') (Join-Path $stage 'SoapyVST')

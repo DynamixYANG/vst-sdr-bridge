@@ -22,3 +22,7 @@
 /docs/releases/2.2/SHA256SUMS.txt
 /docs/releases/2.2.1/*.zip
 /docs/releases/2.2.1/SHA256SUMS.txt
+
+# Vendor bitfile is a local archive, not public GPL payload
+/hardware/ni-pxie-5644r/local/*
+!/hardware/ni-pxie-5644r/local/README.md

@@ -1,0 +1,14 @@
+{
+  "name": "NI Streaming for VST",
+  "hardware": "NI PXIe-5644R",
+  "file": "local/NI Streaming for VST.lvbitx",
+  "bytes": 10778650,
+  "sha256": "e4c77f0a3b9b00c785be60c9be2f598c6a2412835397284feb0346bec05297f4",
+  "fpga_signature": "F9744DDE15670B63D27A69F7CB821C89",
+  "package": "NI-Streaming-Host-5644R-System-2.1.0.1",
+  "source_url": "https://forums.ni.com/t5/Examples-and-IP-for-Software/Streaming-Host-Example-for-the-NI-PXIe-5644R-45R-46R/tac-p/3495895/highlight/true",
+  "installed_source": "C:\\Users\\Public\\Documents\\National Instruments\\FPGA Extensions Bitfiles\\NI PXIe-5644R\\NI Streaming for VST.lvbitx",
+  "license": "NI Software License Terms (Sample Code), retained from the exact package",
+  "license_file": "NI-SAMPLE-CODE-LICENSE.txt",
+  "publication": "Binary archived locally only; excluded from Git/public release. Obtain through NI and comply with original terms."
+}

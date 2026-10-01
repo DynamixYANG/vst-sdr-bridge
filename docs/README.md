@@ -5,3 +5,7 @@ Project documentation. README.md indexes this folder; ARCHITECTURE.md explains i
 VALIDATION-2.2.1.md records current startup/native-client/configuration-field regressions and exact shipped binary identities.
 
 LICENSING.md explains the GPL-3.0-or-later default, distribution requirements, NI driver linking permission and retained third-party license scope. Full texts and bundled-runtime notices are indexed in ../LICENSES/.
+
+REQUIREMENTS.md records runtime/build dependencies, local asset paths and the external-file audit.
+
+ASSET-MIGRATION.md records the 2 October local asset consolidation, Documents cleanup and bounded verification.

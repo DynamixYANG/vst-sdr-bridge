@@ -24,7 +24,7 @@ Evidence: `tests/artifacts/tx-live-ring-native-20260930/`.
 
 ```powershell
 $rc = 'C:\Users\yang\radioconda'
-$root = 'C:\Users\yang\Documents\Codex\2026-09-28\yaml-c-users-yang-documents-pxie5644r'
+$root = 'C:\Users\yang\Documents\vst-sdr-bridge'
 $env:PATH = "$rc;$rc\Library\bin;$rc\Scripts;" + $env:PATH
 $env:PYTHONPATH = "$root\gr-vst\python"
 $env:GRC_BLOCKS_PATH = "$root\gr-vst\grc;$root\soapy-vst\grc"

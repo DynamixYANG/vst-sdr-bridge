@@ -23,7 +23,7 @@ try:
     check('No automatic RX start or IQ publication after idle wait',lambda s:s['status']=='STOPPED' and not s['ring']['active'] and s['ring']['write_idx']==0 and s['dma_msps']==0)
     assert command('CONFIG2 center_hz=2500000000,rate_hz=120000000,reference_level_dbm=-20').startswith('OK')
     check('Applying RX settings while idle does not start acquisition',lambda s:s['status']=='STOPPED' and not s['ring']['active'] and s['ring']['write_idx']==0)
-    config={'source':'file','waveform_path':str(root/'waveforms/nr-tm3.1a-fdd-4x20mhz-120msps.tdms'),'center_hz':2500000000,'rate_hz':120000000,'peak_dbm':-10,'rf_enabled':False,'queue_mi_b':64,'fifo_mi_b':128,'prefill_blocks':16}
+    config={'source':'file','waveform_path':str(root/'waveform/nr-tm3.1a-fdd-4x20mhz-120msps.tdms'),'center_hz':2500000000,'rate_hz':120000000,'peak_dbm':-10,'rf_enabled':False,'queue_mi_b':64,'fifo_mi_b':128,'prefill_blocks':16}
     assert command('TXSTART '+json.dumps(config)).startswith('OK');wait_tx();time.sleep(3)
     check('TX alone works at 120 MS/s before RX has ever started',lambda s:s['status']=='STOPPED' and s['ring']['write_idx']==0 and s['tx']['status']=='STREAMING' and 119.5<s['tx']['processed_msps']<120.5 and s['tx']['underflows']==0 and not s['tx']['rf_enabled'])
     assert command('START').startswith('OK');time.sleep(3)
